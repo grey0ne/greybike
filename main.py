@@ -3,6 +3,7 @@ from aiohttp import web
 import asyncio
 from dataclasses import dataclass
 
+PORT = 31337
 
 @dataclass
 class TelemetryRecord:
@@ -21,12 +22,29 @@ class TelemetryRecord:
     AUX_D: float
     FLAGS: str
 
+PAGE = """
+<html>
+    <head>
+        <script>
+            const socket = new WebSocket("ws://localhost:31337/ws");
+            socket.onmessage = (event) => {
+                document.getElementById('telemetryContainer').innerHTML = event.data;
+                console.log("Message from the server:", event.data);
+            };
+        </script>
+    </head>
+    <body>
+        Grebybike telemetry
+        <div id="telemetryContainer"></div>
+    </body>
+</html>
+"""
 
 INTERFACE = '/dev/cu.usbserial-DK0CEN3X'
 
 
 async def http_handler(request: web.Request):
-    return web.Response(text='Greybike telemetry')
+    return web.Response(text=PAGE, content_type='text/html')
 
 
 async def websocket_handler(request: web.Request):
@@ -100,7 +118,7 @@ def init():
 
 def start_server():
     app = init()
-    web.run_app(app=app, host='127.0.0.1', port=31337)
+    web.run_app(app=app, host='127.0.0.1', port=PORT)
 
 
 if __name__ == "__main__":

@@ -43,9 +43,10 @@ PAGE_TEMPLATE = """
     </head>
     <body>
         Grebybike telemetry
-        <div>Human Torque <span id="human_torque"></span></div>
-        <div>Voltage <span id="voltage"></span></div>
-        <div>RPM <span id="rpm"></span></div>
+        <div>Human Torque <span id="human_torque"></span> Nm</div>
+        <div>Voltage <span id="voltage"></span>V</div>
+        <div>Pedaling RPM <span id="rpm"></span></div>
+        <div>Speed <span id="speed"></span> km/h</div>
     </body>
 </html>
 """

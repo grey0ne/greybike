@@ -2,49 +2,57 @@ import serial
 from aiohttp import web
 import asyncio
 from dataclasses import dataclass
+import json
 
 PORT = 31337
+INTERFACE = '/dev/cu.usbserial-DK0CEN3X'
+TELEMETRY_TASK = 'telemetry_task'
 
 @dataclass
 class TelemetryRecord:
-    AH: float
-    VOLTAGE: float
-    CURRENT: float
-    SPEED: float
-    DISTANCE: float
-    MOTOR_TEMP: float
-    RPM: float
-    HUMAN_WATTS: float
-    HUMAN_TORQUE: float
-    THROTTLE_I: float
-    THROTTLE_O: float
-    AUX_A: float
-    AUX_D: float
-    FLAGS: str
+    amper_hours: float
+    voltage: float
+    current: float
+    speed: float
+    distance: float
+    motor_temp: float
+    rpm: float
+    human_watts: float
+    human_torque: float
+    throttle_input: float
+    throttle_output: float
+    aux_a: float
+    aux_d: float
+    flags: str
 
-PAGE = """
+PAGE_TEMPLATE = """
 <html>
     <head>
         <script>
             const socket = new WebSocket("ws://localhost:31337/ws");
             socket.onmessage = (event) => {
-                document.getElementById('telemetryContainer').innerHTML = event.data;
-                console.log("Message from the server:", event.data);
+                const data = JSON.parse(event.data);
+                for (const key in data) {
+                    const elem = document.getElementById(key)
+                    if (elem) {
+                        elem.innerHTML = data[key];
+                    }
+                }
             };
         </script>
     </head>
     <body>
         Grebybike telemetry
-        <div id="telemetryContainer"></div>
+        <div>Human Torque <span id="human_torque"></span></div>
+        <div>Voltage <span id="voltage"></span></div>
+        <div>RPM <span id="rpm"></span></div>
     </body>
 </html>
 """
 
-INTERFACE = '/dev/cu.usbserial-DK0CEN3X'
-
 
 async def http_handler(request: web.Request):
-    return web.Response(text=PAGE, content_type='text/html')
+    return web.Response(text=PAGE_TEMPLATE, content_type='text/html')
 
 
 async def websocket_handler(request: web.Request):
@@ -59,6 +67,7 @@ async def websocket_handler(request: web.Request):
         request.app['websockets'].remove(ws)
     return ws
 
+
 async def read_telemetry(app: web.Application):
     with serial.Serial(INTERFACE, 9600, timeout=1) as ser:
         while True:
@@ -68,28 +77,25 @@ async def read_telemetry(app: web.Application):
             if len(values) < 14:
                 continue
             telemetry = TelemetryRecord(
-                AH=float(values[0]),
-                VOLTAGE=float(values[1]),
-                CURRENT=float(values[2]),
-                SPEED=float(values[3]),
-                DISTANCE=float(values[4]),
-                MOTOR_TEMP=float(values[5]),
-                RPM=float(values[6]),
-                HUMAN_WATTS=float(values[7]),
-                HUMAN_TORQUE=float(values[8]),
-                THROTTLE_I=float(values[9]),
-                THROTTLE_O=float(values[10]),
-                AUX_A=float(values[11]),
-                AUX_D=float(values[12]),
-                FLAGS=values[13],
+                amper_hours=float(values[0]),
+                voltage=float(values[1]),
+                current=float(values[2]),
+                speed=float(values[3]),
+                distance=float(values[4]),
+                motor_temp=float(values[5]),
+                rpm=float(values[6]),
+                human_watts=float(values[7]),
+                human_torque=float(values[8]),
+                throttle_input=float(values[9]),
+                throttle_output=float(values[10]),
+                aux_a=float(values[11]),
+                aux_d=float(values[12]),
+                flags=values[13],
             )
 
-            telemetry_str = f'Ah {telemetry.AH} Voltage {telemetry.VOLTAGE} Current {telemetry.CURRENT} RPM {telemetry.RPM}'
-            print(telemetry_str)
             for ws in app['websockets']:
-                await ws.send_str(telemetry_str)
+                await ws.send_str(json.dumps(telemetry.__dict__))
 
-TELEMETRY_TASK = 'telemetry_task'
 
 async def on_shutdown(app: web.Application):
     for ws in app['websockets']:

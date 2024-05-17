@@ -1,8 +1,11 @@
-import serial
-from aiohttp import web
-import asyncio
 from dataclasses import dataclass
 import json
+
+from aiohttp import web
+import serial
+import asyncio
+
+from page import PAGE_TEMPLATE
 
 PORT = 31337
 INTERFACE = '/dev/cu.usbserial-DK0CEN3X'
@@ -24,32 +27,6 @@ class TelemetryRecord:
     aux_a: float
     aux_d: float
     flags: str
-
-PAGE_TEMPLATE = """
-<html>
-    <head>
-        <script>
-            const socket = new WebSocket("ws://localhost:31337/ws");
-            socket.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                for (const key in data) {
-                    const elem = document.getElementById(key)
-                    if (elem) {
-                        elem.innerHTML = data[key];
-                    }
-                }
-            };
-        </script>
-    </head>
-    <body>
-        Grebybike telemetry
-        <div>Human Torque <span id="human_torque"></span> Nm</div>
-        <div>Voltage <span id="voltage"></span>V</div>
-        <div>Pedaling RPM <span id="rpm"></span></div>
-        <div>Speed <span id="speed"></span> km/h</div>
-    </body>
-</html>
-"""
 
 
 async def http_handler(request: web.Request):
@@ -125,7 +102,7 @@ def init():
 
 def start_server():
     app = init()
-    web.run_app(app=app, host='127.0.0.1', port=PORT)
+    web.run_app(app=app, host='127.0.0.1', port=PORT) # type: ignore
 
 
 if __name__ == "__main__":

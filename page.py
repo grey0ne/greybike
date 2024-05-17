@@ -7,6 +7,7 @@ PARAM_DICT = {
     'rpm': {'name': 'Pedaling RPM', 'unit': ''},
     'speed': {'name': 'Speed', 'unit': 'km/h'},
     'motor_temp': {'name': 'Motor Temp', 'unit': '°C'},
+    'distance': {'name': 'Distance', 'unit': 'km'},
 }
 PARAM_ELEMS = '\n'.join([f'<div><div><span id="{key}"></span> {param["unit"]}</div><div>{param["name"]}</div></div>' for key, param in PARAM_DICT.items()])
 
@@ -42,6 +43,7 @@ STYLES = """
 PAGE_TEMPLATE = f"""
 <html>
     <head>
+        <title>Greybike Telemetry</title>
         <style>
             {STYLES}
         </style>

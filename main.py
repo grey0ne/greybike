@@ -49,7 +49,6 @@ async def websocket_handler(request: web.Request):
 async def read_telemetry(app: web.Application):
     with serial.Serial(INTERFACE, 9600, timeout=1) as ser:
         while True:
-            await asyncio.sleep(0.1)
             line = ser.readline()
             values = line.decode("utf-8").split("\t")
             if len(values) < 14:
@@ -73,6 +72,7 @@ async def read_telemetry(app: web.Application):
 
             for ws in app['websockets']:
                 await ws.send_str(json.dumps(telemetry.__dict__))
+            await asyncio.sleep(0.05)
 
 
 async def on_shutdown(app: web.Application):
@@ -80,7 +80,7 @@ async def on_shutdown(app: web.Application):
         await ws.close(code=999, message='Server shutdown')
 
 async def start_background_tasks(app: web.Application):
-    app[TELEMETRY_TASK] = app.loop.create_task(read_telemetry(app))
+    app[TELEMETRY_TASK] = asyncio.create_task(read_telemetry(app))
 
 
 async def cleanup_background_tasks(app: web.Application):

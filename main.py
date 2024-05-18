@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import json
+import os
 
 from aiohttp import web
 import serial
@@ -7,9 +8,11 @@ import asyncio
 
 from page import PAGE_TEMPLATE
 
-PORT = 31337
-INTERFACE = '/dev/cu.usbserial-DK0CEN3X'
+PORT = int(os.environ.get('PORT'))
+INTERFACE = os.environ.get('SERIAL')
 TELEMETRY_TASK = 'telemetry_task'
+SERIAL_TIMEOUT = 0.1
+SERIAL_WAIT_TIME = 0.05
 
 @dataclass
 class TelemetryRecord:
@@ -27,6 +30,7 @@ class TelemetryRecord:
     aux_a: float
     aux_d: float
     flags: str
+    is_brake_pressed: bool
 
 
 async def http_handler(request: web.Request):
@@ -47,11 +51,12 @@ async def websocket_handler(request: web.Request):
 
 
 async def read_telemetry(app: web.Application):
-    with serial.Serial(INTERFACE, 9600, timeout=1) as ser:
+    with serial.Serial(INTERFACE, 9600, timeout=SERIAL_TIMEOUT) as ser:
         while True:
             line = ser.readline()
             values = line.decode("utf-8").split("\t")
             if len(values) < 14:
+                await asyncio.sleep(SERIAL_WAIT_TIME)
                 continue
             telemetry = TelemetryRecord(
                 amper_hours=float(values[0]),
@@ -68,11 +73,13 @@ async def read_telemetry(app: web.Application):
                 aux_a=float(values[11]),
                 aux_d=float(values[12]),
                 flags=values[13],
+                is_brake_pressed=values[13].contains('B')
             )
 
+            data = json.dumps(telemetry.__dict__)
             for ws in app['websockets']:
-                await ws.send_str(json.dumps(telemetry.__dict__))
-            await asyncio.sleep(0.05)
+                await ws.send_str(data)
+            await asyncio.sleep(SERIAL_WAIT_TIME)
 
 
 async def on_shutdown(app: web.Application):
@@ -102,8 +109,9 @@ def init():
 
 def start_server():
     app = init()
-    web.run_app(app=app, host='127.0.0.1', port=PORT) # type: ignore
+    web.run_app(app=app, host='0.0.0.0', port=PORT) # type: ignore
 
 
 if __name__ == "__main__":
+    print(f'Using serial interface {INTERFACE}')
     start_server()

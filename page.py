@@ -1,3 +1,5 @@
+import os
+
 PARAM_DICT = {
     'amper_hours': {'name': 'Amper Hours', 'unit': 'Ah'},
     'human_torque': {'name': 'Human Torque', 'unit': 'Nm'},
@@ -12,7 +14,7 @@ PARAM_DICT = {
 PARAM_ELEMS = '\n'.join([f'<div><div><span id="{key}"></span> {param["unit"]}</div><div>{param["name"]}</div></div>' for key, param in PARAM_DICT.items()])
 
 SCRIPT = """
-    const socket = new WebSocket("ws://localhost:31337/ws");
+    const socket = new WebSocket(`ws://${window.location.host}/ws`);
     socket.onmessage = (event) => {
         const data = JSON.parse(event.data);
         for (const key in data) {

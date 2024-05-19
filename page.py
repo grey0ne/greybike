@@ -1,5 +1,3 @@
-import os
-
 PARAM_DICT = {
     'amper_hours': {'name': 'Amper Hours', 'unit': 'Ah'},
     'human_torque': {'name': 'Human Torque', 'unit': 'Nm'},
@@ -43,6 +41,7 @@ STYLES = """
 """
 
 PAGE_TEMPLATE = f"""
+<!DOCTYPE html>
 <html>
     <head>
         <title>Greybike Telemetry</title>
@@ -60,4 +59,3 @@ PAGE_TEMPLATE = f"""
     </body>
 </html>
 """
-

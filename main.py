@@ -30,6 +30,7 @@ class TelemetryRecord:
     throttle_output: float
     aux_a: float
     aux_d: float
+    mode: int
     flags: str
     is_brake_pressed: bool
 
@@ -54,6 +55,7 @@ def record_from_line(line: bytes) -> TelemetryRecord | None:
     values = line.decode("utf-8").split("\t")
     if len(values) < 14:
         return None
+    flags = values[13].replace('\r\n', '')
     return TelemetryRecord(
         amper_hours=float(values[0]),
         voltage=float(values[1]),
@@ -68,8 +70,9 @@ def record_from_line(line: bytes) -> TelemetryRecord | None:
         throttle_output=float(values[10]),
         aux_a=float(values[11]),
         aux_d=float(values[12]),
-        flags=values[13],
-        is_brake_pressed='B' in values[13]
+        flags=flags,
+        mode=int(flags[0]),
+        is_brake_pressed='B' in flags
     )
 
 async def read_telemetry(app: web.Application):

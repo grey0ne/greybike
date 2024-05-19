@@ -8,6 +8,8 @@ PARAM_DICT = {
     'speed': {'name': 'Speed', 'unit': 'km/h'},
     'motor_temp': {'name': 'Motor Temp', 'unit': '°C'},
     'distance': {'name': 'Distance', 'unit': 'km'},
+    'mode': {'name': 'Mode', 'unit': ''},
+    'is_brake_pressed': {'name': 'Brake Pressed', 'unit': ''},
 }
 PARAM_ELEMS = '\n'.join([f'<div><div><span id="{key}"></span> {param["unit"]}</div><div>{param["name"]}</div></div>' for key, param in PARAM_DICT.items()])
 

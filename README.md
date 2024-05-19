@@ -1,3 +1,5 @@
+Very basic web interface for serial data from cycle analyst. Dependencies is kept on bare minimum. Frameworks is absent on purpose.
+
 Create .env file with
 
 ```

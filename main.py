@@ -1,6 +1,8 @@
 from dataclasses import dataclass
+from datetime import datetime
 import json
 import os
+import random
 
 from aiohttp import web
 import serial
@@ -14,6 +16,7 @@ INTERFACE = os.environ.get('SERIAL')
 TELEMETRY_TASK = 'telemetry_task'
 SERIAL_TIMEOUT = 0.1
 SERIAL_WAIT_TIME = 0.05
+LOG_DIRECTORY = 'logs'
 
 @dataclass
 class TelemetryRecord:
@@ -51,7 +54,8 @@ async def websocket_handler(request: web.Request):
         request.app['websockets'].remove(ws)
     return ws
 
-def record_from_line(line: bytes) -> TelemetryRecord | None:
+def record_from_serial(ser: serial.Serial) -> TelemetryRecord | None:
+    line = ser.readline()
     values = line.decode("utf-8").split("\t")
     if len(values) < 14:
         return None
@@ -75,16 +79,44 @@ def record_from_line(line: bytes) -> TelemetryRecord | None:
         is_brake_pressed='B' in flags
     )
 
+def get_random_value(from_: float, to_: float, step:float, previous: float | None) -> float:
+    if previous is not None:
+        return previous + random.uniform(-step, step)
+    return random.uniform(from_, to_)
+
+def record_from_random(previous: TelemetryRecord | None) -> TelemetryRecord:
+    return TelemetryRecord(
+        amper_hours=get_random_value(0, 10, 0.01, previous and previous.amper_hours),
+        voltage=random.uniform(35, 55),
+        current=random.uniform(0, 25),
+        speed=random.uniform(0, 50),
+        distance=random.uniform(0, 100),
+        motor_temp=get_random_value(20, 80, 0.1, previous and previous.motor_temp),
+        rpm=get_random_value(0, 200, 1, previous and previous.rpm),
+        human_watts=get_random_value(0, 500, 1, previous and previous.human_watts),
+        human_torque=get_random_value(0, 50, 0.1, previous and previous.human_torque),
+        throttle_input=get_random_value(0, 100, 0.1, previous and previous.throttle_input),
+        throttle_output=get_random_value(0, 100, 0.1, previous and previous.throttle_output),
+        aux_a=0,
+        aux_d=0,
+        flags='',
+        mode=1,
+        is_brake_pressed=False
+ 
+    )
+
+async def send_telemetry(app: web.Application, telemetry: TelemetryRecord  | None):
+    if telemetry is not None:
+        data = json.dumps(telemetry.__dict__)
+        for ws in app['websockets']:
+            await ws.send_str(data)
+
 async def read_telemetry(app: web.Application):
     try:
         with serial.Serial(INTERFACE, 9600, timeout=SERIAL_TIMEOUT) as ser:
             while True:
-                line = ser.readline()
-                telemetry = record_from_line(line)
-                if telemetry is not None:
-                    data = json.dumps(telemetry.__dict__)
-                    for ws in app['websockets']:
-                        await ws.send_str(data)
+                telemetry = record_from_serial(ser)
+                await send_telemetry(app, telemetry)
                 await asyncio.sleep(SERIAL_WAIT_TIME)
     except SerialException:
         print(f'Could not open serial interface {INTERFACE}')
@@ -101,11 +133,14 @@ async def start_background_tasks(app: web.Application):
 async def cleanup_background_tasks(app: web.Application):
     print('cleanup background tasks...')
     app[TELEMETRY_TASK].cancel()
+    app['log_file'].close()
     await app[TELEMETRY_TASK]
+
 
 def init():
     app = web.Application()
     app['websockets'] = []
+    app['log_file'] = open(os.path.join(LOG_DIRECTORY, f'{datetime.now().isoformat()}.log'), '+w')
     app.add_routes([
         web.get('/',   http_handler),
         web.get('/ws', websocket_handler),

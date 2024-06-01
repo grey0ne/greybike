@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
 import json
 import os
 import random
@@ -13,10 +14,12 @@ from page import PAGE_TEMPLATE
 
 PORT = int(os.environ.get('PORT', 8080))
 INTERFACE = os.environ.get('SERIAL')
+DEV_MODE = os.environ.get('DEV_MODE', 'false').lower() == 'true'
 TELEMETRY_TASK = 'telemetry_task'
 SERIAL_TIMEOUT = 0.1
 SERIAL_WAIT_TIME = 0.05
-LOG_DIRECTORY = 'logs'
+SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))
+LOG_DIRECTORY = os.path.join(SOURCE_DIR, 'logs')
 
 @dataclass
 class TelemetryRecord:
@@ -81,18 +84,27 @@ def record_from_serial(ser: serial.Serial) -> TelemetryRecord | None:
 
 def get_random_value(from_: float, to_: float, step:float, previous: float | None) -> float:
     if previous is not None:
-        return previous + random.uniform(-step, step)
-    return random.uniform(from_, to_)
+        if random.uniform(0, 10) < 1:
+            result = previous + random.uniform(-step, step)
+            if result < from_:
+                result = from_
+            elif result > to_:
+                result = to_
+        else:
+            result = previous
+    else:
+        result = random.uniform(from_, to_)
+    return round(result, 2)
 
 def record_from_random(previous: TelemetryRecord | None) -> TelemetryRecord:
     return TelemetryRecord(
         amper_hours=get_random_value(0, 10, 0.01, previous and previous.amper_hours),
-        voltage=random.uniform(35, 55),
-        current=random.uniform(0, 25),
-        speed=random.uniform(0, 50),
-        distance=random.uniform(0, 100),
+        voltage=get_random_value(35, 55, 0.1, previous and previous.voltage),
+        current=get_random_value(0, 25, 1, previous and previous.current),
+        speed=get_random_value(0, 50, 1, previous and previous.speed),
+        distance=get_random_value(0, 100, 0.1, previous and previous.distance),
         motor_temp=get_random_value(20, 80, 0.1, previous and previous.motor_temp),
-        rpm=get_random_value(0, 200, 1, previous and previous.rpm),
+        rpm=get_random_value(0, 200, 10, previous and previous.rpm),
         human_watts=get_random_value(0, 500, 1, previous and previous.human_watts),
         human_torque=get_random_value(0, 50, 0.1, previous and previous.human_torque),
         throttle_input=get_random_value(0, 100, 0.1, previous and previous.throttle_input),
@@ -121,13 +133,20 @@ async def read_telemetry(app: web.Application):
     except SerialException:
         print(f'Could not open serial interface {INTERFACE}')
 
+async def read_random_telemetry(app: web.Application):
+    previous = None
+    while True:
+        telemetry = record_from_random(previous)
+        await send_telemetry(app, telemetry)
+        previous = telemetry
+        await asyncio.sleep(SERIAL_WAIT_TIME)
 
 async def on_shutdown(app: web.Application):
     for ws in app['websockets']:
         await ws.close(code=999, message='Server shutdown')
 
 async def start_background_tasks(app: web.Application):
-    app[TELEMETRY_TASK] = asyncio.create_task(read_telemetry(app))
+    app[TELEMETRY_TASK] = asyncio.create_task(read_random_telemetry(app))
 
 
 async def cleanup_background_tasks(app: web.Application):
@@ -140,7 +159,8 @@ async def cleanup_background_tasks(app: web.Application):
 def init():
     app = web.Application()
     app['websockets'] = []
-    app['log_file'] = open(os.path.join(LOG_DIRECTORY, f'{datetime.now().isoformat()}.log'), '+w')
+    Path(LOG_DIRECTORY).mkdir(parents=True, exist_ok=True)
+    app['log_file'] = open(os.path.join(LOG_DIRECTORY, f'{datetime.now().isoformat()}.log'), 'w+')
     app.add_routes([
         web.get('/',   http_handler),
         web.get('/ws', websocket_handler),
@@ -156,5 +176,8 @@ def start_server():
 
 
 if __name__ == "__main__":
-    print(f'Using serial interface {INTERFACE}')
+    if DEV_MODE:
+        print('Running in development mode. Telemetry will be generated randomly.')
+    else:
+        print(f'Using serial interface {INTERFACE}')
     start_server()

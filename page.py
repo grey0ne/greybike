@@ -13,18 +13,9 @@ PARAM_DICT = {
 }
 PARAM_ELEMS = '\n'.join([f'<div><div><span id="{key}"></span> {param["unit"]}</div><div>{param["name"]}</div></div>' for key, param in PARAM_DICT.items()])
 
-SCRIPT = """
-    const socket = new WebSocket(`ws://${window.location.host}/ws`);
-    socket.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        for (const key in data) {
-            const elem = document.getElementById(key)
-            if (elem) {
-                elem.innerHTML = data[key];
-            }
-        }
-    };
-"""
+SCRIPT = open('telemetry.js').read()
+
+""
 
 STYLES = """
     .telemetry-params {
@@ -53,10 +44,15 @@ PAGE_TEMPLATE = f"""
         <script>
             {SCRIPT}
         </script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     </head>
     <body>
         <div class="telemetry-params">
             {PARAM_ELEMS}
+        </div>
+
+        <div style="width: 800px; height: 400px;">
+            <canvas id="myChart"></canvas>
         </div>
     </body>
 </html>

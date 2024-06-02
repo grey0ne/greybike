@@ -76,7 +76,10 @@ async def on_shutdown(app: web.Application):
 
 
 async def start_background_tasks(app: web.Application):
-    app[TELEMETRY_TASK] = asyncio.create_task(read_random_telemetry(app))
+    if DEV_MODE:
+        app[TELEMETRY_TASK] = asyncio.create_task(read_random_telemetry(app))
+    else:
+        app[TELEMETRY_TASK] = asyncio.create_task(read_telemetry(app))
 
 
 async def cleanup_background_tasks(app: web.Application):

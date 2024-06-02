@@ -13,7 +13,8 @@ PARAM_DICT = {
 }
 PARAM_ELEMS = '\n'.join([f'<div><div><span id="{key}"></span> {param["unit"]}</div><div>{param["name"]}</div></div>' for key, param in PARAM_DICT.items()])
 
-SCRIPT = open('telemetry.js').read()
+with open('telemetry.js') as js_file:
+    SCRIPT = js_file.read()
 
 ""
 

@@ -40,7 +40,9 @@ async def websocket_handler(request: web.Request):
 
 async def send_telemetry(app: web.Application, telemetry: TelemetryRecord  | None):
     if telemetry is not None:
-        data = json.dumps(telemetry.__dict__)
+        data_dict = telemetry.__dict__
+        data_dict['log_file'] = app['log_file'].name.split('/')[-1]
+        data = json.dumps(data_dict)
         for ws in app['websockets']:
             await ws.send_str(data)
 

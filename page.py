@@ -51,6 +51,11 @@ PAGE_TEMPLATE = f"""
         <div class="telemetry-params">
             {PARAM_ELEMS}
         </div>
+        <div>
+            Log file:&nbsp;
+            <span id="log_file">
+            </span>
+        </div>
 
         <div style="width: 800px; height: 400px;">
             <canvas id="myChart"></canvas>

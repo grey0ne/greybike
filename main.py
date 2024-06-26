@@ -24,6 +24,19 @@ LOG_DIRECTORY = os.path.join(SOURCE_DIR, 'logs')
 async def http_handler(request: web.Request):
     return web.Response(text=PAGE_TEMPLATE, content_type='text/html')
 
+def reset_log(app: web.Application):
+    if 'log_file' in app:
+        print(f'Closing log file {app["log_file"].name}')
+        app['log_file'].close()
+    app['log_start_time'] = datetime.now()
+    log_file = os.path.join(LOG_DIRECTORY, f'{datetime.now().isoformat()}.log')
+    print(f'Logging to {log_file}')
+    app['log_file'] = open(log_file, 'w+')
+
+async def reset_log_handler(request: web.Request):
+    reset_log(request.app)
+    return web.Response(text='Log file reset')
+
 
 async def websocket_handler(request: web.Request):
     ws = web.WebSocketResponse()
@@ -42,6 +55,7 @@ async def send_telemetry(app: web.Application, telemetry: TelemetryRecord  | Non
     if telemetry is not None:
         data_dict = telemetry.__dict__
         data_dict['log_file'] = app['log_file'].name.split('/')[-1]
+        data_dict['log_duration'] = (datetime.now() - app['log_start_time']).total_seconds()
         data = json.dumps(data_dict)
         for ws in app['websockets']:
             await ws.send_str(data)
@@ -95,12 +109,11 @@ def init():
     app = web.Application()
     app['websockets'] = []
     Path(LOG_DIRECTORY).mkdir(parents=True, exist_ok=True)
-    log_file = os.path.join(LOG_DIRECTORY, f'{datetime.now().isoformat()}.log')
-    print(f'Logging to {log_file}')
-    app['log_file'] = open(log_file, 'w+')
+    reset_log(app)
     app.add_routes([
         web.get('/',   http_handler),
         web.get('/ws', websocket_handler),
+        web.post('/reset_log', reset_log_handler)
     ])
     app.on_startup.append(start_background_tasks)
     app.on_cleanup.append(cleanup_background_tasks)

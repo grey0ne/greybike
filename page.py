@@ -56,6 +56,15 @@ PAGE_TEMPLATE = f"""
             <span id="log_file">
             </span>
         </div>
+        <div>
+            Duration:&nbsp;
+            <span id="log_duration">
+            </span>
+            &nbsp;Seconds
+            <form action="/reset_log" id="resetForm">
+                <input name="submit" type="submit" value="Reset log file">
+            </form>
+        </div>
 
         <div style="width: 800px; height: 400px;">
             <canvas id="myChart"></canvas>

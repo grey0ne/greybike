@@ -63,8 +63,14 @@ const BASE_CHART_DATA = {
     }
 }
 
+resetFormSubmit = (event) => {
+    event.preventDefault();
+    const url = document.getElementById('resetForm').getAttribute('action');
+    fetch(url, { method: 'POST'});
+}
 window.onload = () => {
     const ctx = document.getElementById('myChart');
     window.counter = 0;
     window.chart = new Chart(ctx, BASE_CHART_DATA);
+    document.getElementById('resetForm').addEventListener("submit", resetFormSubmit);
 };

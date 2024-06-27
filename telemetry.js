@@ -46,6 +46,8 @@ socket.onmessage = (event) => {
             paramContainer.appendChild(paramElem);
         }
     }
+    document.getElementById('log_duration').innerText = data['log_duration'];
+    document.getElementById('log_file').innerText = data['log_file'];
     if (window.counter % GRAPH_FREQUENCY === 0) {
         if (chart.data.labels.length > MAX_POINTS) {
             chart.data.labels.shift();

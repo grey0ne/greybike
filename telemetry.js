@@ -1,5 +1,18 @@
 const MAX_POINTS = 60;
 const GRAPH_FREQUENCY = 10;
+const PARAM_DICT = {
+    'amper_hours': {'name': 'Amper Hours', 'unit': 'Ah'},
+    'human_torque': {'name': 'Human Torque', 'unit': 'Nm'},
+    'human_watts': {'name': 'Human Power', 'unit': 'W'},
+    'voltage': {'name': 'Voltage', 'unit': 'V'},
+    'current': {'name': 'Current', 'unit': 'A'},
+    'rpm': {'name': 'Pedaling RPM', 'unit': ''},
+    'speed': {'name': 'Speed', 'unit': 'km/h'},
+    'motor_temp': {'name': 'Motor Temp', 'unit': '°C'},
+    'distance': {'name': 'Distance', 'unit': 'km'},
+    'mode': {'name': 'Mode', 'unit': ''},
+    'is_brake_pressed': {'name': 'Brake Pressed', 'unit': ''},
+}
 
 const socket = new WebSocket(`ws://${window.location.host}/ws`);
 
@@ -7,6 +20,9 @@ socket.onmessage = (event) => {
     const data = JSON.parse(event.data);
     const chart = window.chart;
     window.counter++;
+
+    const paramContainer = document.getElementById("telemetry-params")
+    paramContainer.innerHTML = "";
     for (const key in data) {
         if (window.counter % GRAPH_FREQUENCY === 0) {
             for (const ds of chart.data.datasets) {
@@ -18,9 +34,16 @@ socket.onmessage = (event) => {
                 }
             }
         }
-        const elem = document.getElementById(key)
-        if (elem) {
-            elem.innerHTML = data[key];
+        const paramData = PARAM_DICT[key];
+        if (paramData) {
+            const paramElem = document.createElement('div');
+            paramElem.innerHTML = `
+                <div>
+                    <div><span id="${key}">${data[key]}</span> ${paramData.unit}</div>
+                    <div>${paramData.name}</div>
+                </div>
+            `
+            paramContainer.appendChild(paramElem);
         }
     }
     if (window.counter % GRAPH_FREQUENCY === 0) {

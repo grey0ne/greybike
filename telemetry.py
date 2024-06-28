@@ -22,15 +22,7 @@ class TelemetryRecord:
     flags: str
     is_brake_pressed: bool
 
-
-def record_from_serial(ser: serial.Serial) -> TelemetryRecord | None:
-    line = ser.readline()
-    try:
-        values = line.decode("utf-8").split("\t")
-    except Exception as e:
-        print(e)
-    if len(values) < 14:
-        return None
+def record_from_values(values: list[str]):
     flags = values[13].replace('\r\n', '')
     return TelemetryRecord(
         amper_hours=float(values[0]),
@@ -50,6 +42,23 @@ def record_from_serial(ser: serial.Serial) -> TelemetryRecord | None:
         mode=int(flags[0]),
         is_brake_pressed='B' in flags
     )
+
+
+
+def record_from_serial(ser: serial.Serial) -> TelemetryRecord | None:
+    line = ser.readline()
+    try:
+        values = line.decode("utf-8").split("\t")
+    except Exception as e:
+        print(e)
+        return None
+    if len(values) < 14:
+        return None
+    try:
+        return record_from_values(values)
+    except ValueError:
+        return None
+
 
 def get_random_value(from_: float, to_: float, step:float, previous: float | None) -> float:
     if previous is not None:

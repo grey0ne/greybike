@@ -25,7 +25,10 @@ class TelemetryRecord:
 
 def record_from_serial(ser: serial.Serial) -> TelemetryRecord | None:
     line = ser.readline()
-    values = line.decode("utf-8").split("\t")
+    try:
+        values = line.decode("utf-8").split("\t")
+    except Exception as e:
+        print(e)
     if len(values) < 14:
         return None
     flags = values[13].replace('\r\n', '')

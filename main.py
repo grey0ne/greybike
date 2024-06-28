@@ -34,7 +34,7 @@ async def http_handler(request: web.Request):
 def reset_log(app: web.Application):
     state = app['state']
     if state.log_file is not None:
-        print(f'Closing log file {app["log_file"].name}')
+        print(f'Closing log file {state.log_file.name}')
         state.log_file.close()
     state.log_start_time = datetime.now()
     log_file_path = os.path.join(LOG_DIRECTORY, f'{datetime.now().isoformat()}.log')

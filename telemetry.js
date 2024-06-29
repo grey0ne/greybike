@@ -14,9 +14,7 @@ const PARAM_DICT = {
     'is_brake_pressed': {'name': 'Brake Pressed', 'unit': ''},
 }
 
-const socket = new WebSocket(`ws://${window.location.host}/ws`);
-
-socket.onmessage = (event) => {
+function onMessage(event) {
     const data = JSON.parse(event.data);
     const chart = window.chart;
     window.counter++;
@@ -37,8 +35,8 @@ socket.onmessage = (event) => {
         const paramData = PARAM_DICT[key];
         if (paramData) {
             const paramElem = document.createElement('div');
-	    const treshold = paramData.treshold || 0;
-	    const value = data[key] > treshold ? data[key] : 0;
+        const treshold = paramData.treshold || 0;
+        const value = data[key] > treshold ? data[key] : 0;
             paramElem.innerHTML = `
                 <div>
                     <div><span id="${key}">${value}</span> ${paramData.unit}</div>
@@ -57,7 +55,14 @@ socket.onmessage = (event) => {
         chart.data.labels.push(window.counter / 10);
         chart.update();
     }
-} 
+}
+
+function initializeConnection() {
+    const socket = new WebSocket(`ws://${window.location.host}/ws`);
+
+    socket.onmessage = onMessage
+ 
+}
 
 const BASE_CHART_DATA = {
     type: 'line',
@@ -96,8 +101,9 @@ resetFormSubmit = (event) => {
     fetch(url, { method: 'POST'});
 }
 window.onload = () => {
+    initializeConnection();
+    document.getElementById('resetForm').addEventListener("submit", resetFormSubmit);
     const ctx = document.getElementById('myChart');
     window.counter = 0;
     window.chart = new Chart(ctx, BASE_CHART_DATA);
-    document.getElementById('resetForm').addEventListener("submit", resetFormSubmit);
 };

@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from typing import TextIO
 
 from telemetry import TelemetryRecord, record_from_serial, record_from_random
-from constants import LOG_DIRECTORY, SERIAL_TIMEOUT, SERIAL_WAIT_TIME
+from constants import LOG_DIRECTORY, SERIAL_TIMEOUT, SERIAL_WAIT_TIME, MANIFEST
 from page import PAGE_TEMPLATE
 
 PORT = int(os.environ.get('PORT', 8080))
@@ -32,6 +32,7 @@ LOG_FIELDS = [
     'mode'
 ]
 
+
 @dataclass
 class AppState:
     log_file: TextIO | None = None
@@ -41,6 +42,9 @@ class AppState:
 
 async def http_handler(request: web.Request):
     return web.Response(text=PAGE_TEMPLATE, content_type='text/html')
+
+async def manifest_handler(request: web.Request):
+    return web.Response(text=MANIFEST, content_type='application/json')
 
 def reset_log(app: web.Application):
     state = app['state']
@@ -145,6 +149,7 @@ def init():
     app.add_routes([
         web.get('/',   http_handler),
         web.get('/ws', websocket_handler),
+        web.get('/manifest.json', manifest_handler),
         web.post('/reset_log', reset_log_handler)
     ])
     app.on_startup.append(start_background_tasks)

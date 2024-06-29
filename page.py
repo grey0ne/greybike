@@ -1,35 +1,22 @@
-from constants import JS_FILE
+from constants import SCRIPT_CONTENT, STYLES_CONTENT
 
 
-with open(JS_FILE) as js_file:
-    SCRIPT = js_file.read()
-
-STYLES = """
-    #telemetry-params {
-        display: flex;
-        flex-wrap: wrap;
-    }
-    #telemetry-params > div {
-        width: 30%;
-        font-size: 32px;
-        text-align: center;
-        margin: 10px;
-    }
-    #telemetry-params span {
-        font-size: 48px;
-    }
-"""
 
 PAGE_TEMPLATE = f"""
 <!DOCTYPE html>
 <html>
     <head>
         <title>Greybike Telemetry</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=0" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+        <meta name="apple-mobile-web-app-title" content="Telemetry" />
+        <link rel="manifest" href="/manifest.json" />
         <style>
-            {STYLES}
+            {STYLES_CONTENT}
         </style>
         <script>
-            {SCRIPT}
+            {SCRIPT_CONTENT}
         </script>
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     </head>

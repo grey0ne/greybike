@@ -11,3 +11,6 @@ PORT=8080
 
 Run
 ./run.sh
+
+Install service
+./install_service.sh

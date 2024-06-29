@@ -11,16 +11,13 @@ from dataclasses import dataclass
 from typing import TextIO
 
 from telemetry import TelemetryRecord, record_from_serial, record_from_random
+from constants import LOG_DIRECTORY, SERIAL_TIMEOUT, SERIAL_WAIT_TIME
 from page import PAGE_TEMPLATE
 
 PORT = int(os.environ.get('PORT', 8080))
 INTERFACE = os.environ.get('SERIAL')
 DEV_MODE = os.environ.get('DEV_MODE', 'false').lower() == 'true'
 TELEMETRY_TASK = 'telemetry_task'
-SERIAL_TIMEOUT = 0.1
-SERIAL_WAIT_TIME = 0.05
-SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))
-LOG_DIRECTORY = os.path.join(SOURCE_DIR, 'logs')
 LOG_VERSION = '1'
 LOG_HEADER_TEMPLATE = """
 GREYBIKE LOG

@@ -1,5 +1,7 @@
+from constants import JS_FILE
 
-with open('telemetry.js') as js_file:
+
+with open(JS_FILE) as js_file:
     SCRIPT = js_file.read()
 
 STYLES = """

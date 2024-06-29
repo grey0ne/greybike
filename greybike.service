@@ -1,0 +1,12 @@
+[Unit]
+Description=Greybike Telemetry Daemon
+After=multi-user.target
+
+[Service]
+Type=simple
+EnvironmentFile=/home/greyone/greybike/.env
+ExecStart=/home/greyone/greybike/.venv/bin/python /home/greyone/greybike/main.py
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target

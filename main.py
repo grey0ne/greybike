@@ -21,11 +21,25 @@ SERIAL_TIMEOUT = 0.1
 SERIAL_WAIT_TIME = 0.05
 SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOG_DIRECTORY = os.path.join(SOURCE_DIR, 'logs')
+LOG_VERSION = '1'
+LOG_HEADER_TEMPLATE = """
+GREYBIKE LOG
+VERSION v{version}
+FIELDS {fields}
+"""
+LOG_RECORD_COUNT_LIMIT = 36000 # One hour at 10 record/s rate
+
+LOG_FIELDS = [
+    'timestamp', 'speed', 'voltage', 'current', 'trip_distance', 'amper_hours', 'motor_temp',
+    'pedal_rpm', 'human_torque', 'human_watts', 'throttle_input', 'throttle_output',
+    'mode'
+]
 
 @dataclass
 class AppState:
     log_file: TextIO | None = None
     log_start_time: datetime | None = None
+    log_record_count: int = 0
 
 
 async def http_handler(request: web.Request):
@@ -36,10 +50,15 @@ def reset_log(app: web.Application):
     if state.log_file is not None:
         print(f'Closing log file {state.log_file.name}')
         state.log_file.close()
+    state.log_record_count = 0
     state.log_start_time = datetime.now()
     log_file_path = os.path.join(LOG_DIRECTORY, f'{datetime.now().isoformat()}.log')
     print(f'Logging to {log_file_path}')
     state.log_file = open(log_file_path, 'w+')
+    log_header = LOG_HEADER_TEMPLATE.format(
+        version=LOG_VERSION, fields=','.join(LOG_FIELDS)
+    )
+    state.log_file.write(log_header)
 
 async def reset_log_handler(request: web.Request):
     reset_log(request.app)
@@ -62,16 +81,22 @@ async def websocket_handler(request: web.Request):
 async def send_telemetry(app: web.Application, telemetry: TelemetryRecord  | None):
     state = app['state']
     if telemetry is not None:
+        if state.log_record_count >= LOG_RECORD_COUNT_LIMIT:
+            reset_log(app)
         data_dict = telemetry.__dict__
         data_dict['log_file'] = state.log_file.name.split('/')[-1]
         data_dict['log_duration'] = (datetime.now() - state.log_start_time).total_seconds()
         data = json.dumps(data_dict)
+        state.log_record_count += 1
         for ws in app['websockets']:
             await ws.send_str(data)
 
 def write_to_log(app: web.Application, telemetry: TelemetryRecord | None):
     if telemetry is not None:
-        app['state'].log_file.write(f'{datetime.now().isoformat()} {telemetry.__dict__}\n')
+        data = telemetry.__dict__
+        data['timestamp'] = "%.2f" % datetime.timestamp(datetime.now())
+        log_record = ','.join(str(data[field]) for field in LOG_FIELDS)
+        app['state'].log_file.write(f'{log_record}\n')
 
 async def read_telemetry(app: web.Application):
     try:

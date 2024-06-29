@@ -9,9 +9,9 @@ class TelemetryRecord:
     voltage: float
     current: float
     speed: float
-    distance: float
+    trip_distance: float
     motor_temp: float
-    rpm: float
+    pedal_rpm: float
     human_watts: float
     human_torque: float
     throttle_input: float
@@ -29,9 +29,9 @@ def record_from_values(values: list[str]):
         voltage=float(values[1]),
         current=float(values[2]),
         speed=float(values[3]),
-        distance=float(values[4]),
+        trip_distance=float(values[4]),
         motor_temp=float(values[5]),
-        rpm=float(values[6]),
+        pedal_rpm=float(values[6]),
         human_watts=float(values[7]),
         human_torque=float(values[8]),
         throttle_input=float(values[9]),
@@ -80,9 +80,9 @@ def record_from_random(previous: TelemetryRecord | None) -> TelemetryRecord:
         voltage=get_random_value(35, 55, 0.1, previous and previous.voltage),
         current=get_random_value(0, 25, 1, previous and previous.current),
         speed=get_random_value(0, 50, 1, previous and previous.speed),
-        distance=get_random_value(0, 100, 0.1, previous and previous.distance),
+        trip_distance=get_random_value(0, 100, 0.1, previous and previous.trip_distance),
         motor_temp=get_random_value(20, 80, 0.1, previous and previous.motor_temp),
-        rpm=get_random_value(0, 200, 10, previous and previous.rpm),
+        pedal_rpm=get_random_value(0, 200, 10, previous and previous.pedal_rpm),
         human_watts=get_random_value(0, 500, 1, previous and previous.human_watts),
         human_torque=get_random_value(0, 50, 0.1, previous and previous.human_torque),
         throttle_input=get_random_value(0, 100, 0.1, previous and previous.throttle_input),

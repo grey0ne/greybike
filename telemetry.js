@@ -6,10 +6,10 @@ const PARAM_DICT = {
     'human_watts': {'name': 'Human Power', 'unit': 'W'},
     'voltage': {'name': 'Voltage', 'unit': 'V'},
     'current': {'name': 'Current', 'unit': 'A'},
-    'rpm': {'name': 'Pedaling RPM', 'unit': ''},
+    'pedal_rpm': {'name': 'Pedaling RPM', 'unit': ''},
     'speed': {'name': 'Speed', 'unit': 'km/h'},
     'motor_temp': {'name': 'Motor Temp', 'unit': '°C'},
-    'distance': {'name': 'Distance', 'unit': 'km'},
+    'trip_distance': {'name': 'Distance', 'unit': 'km'},
     'mode': {'name': 'Mode', 'unit': ''},
     'is_brake_pressed': {'name': 'Brake Pressed', 'unit': ''},
 }

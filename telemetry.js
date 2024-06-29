@@ -2,7 +2,7 @@ const MAX_POINTS = 60;
 const GRAPH_FREQUENCY = 10;
 const PARAM_DICT = {
     'amper_hours': {'name': 'Amper Hours', 'unit': 'Ah'},
-    'human_torque': {'name': 'Human Torque', 'unit': 'Nm'},
+    'human_torque': {'name': 'Human Torque', 'unit': 'Nm', 'treshold': 1},
     'human_watts': {'name': 'Human Power', 'unit': 'W'},
     'voltage': {'name': 'Voltage', 'unit': 'V'},
     'current': {'name': 'Current', 'unit': 'A'},
@@ -37,9 +37,11 @@ socket.onmessage = (event) => {
         const paramData = PARAM_DICT[key];
         if (paramData) {
             const paramElem = document.createElement('div');
+	    const treshold = paramData.treshold || 0;
+	    const value = data[key] > treshold ? data[key] : 0;
             paramElem.innerHTML = `
                 <div>
-                    <div><span id="${key}">${data[key]}</span> ${paramData.unit}</div>
+                    <div><span id="${key}">${value}</span> ${paramData.unit}</div>
                     <div>${paramData.name}</div>
                 </div>
             `

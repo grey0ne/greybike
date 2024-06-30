@@ -35,8 +35,8 @@ function onMessage(event) {
         const paramData = PARAM_DICT[key];
         if (paramData) {
             const paramElem = document.createElement('div');
-        const treshold = paramData.treshold || 0;
-        const value = data[key] > treshold ? data[key] : 0;
+            const treshold = paramData.treshold || 0;
+            const value = data[key] > treshold ? data[key] : 0;
             paramElem.innerHTML = `
                 <div>
                     <div><span id="${key}">${value}</span> ${paramData.unit}</div>

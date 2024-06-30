@@ -9,6 +9,7 @@ import serial
 from serial.serialutil import SerialException
 from dataclasses import dataclass
 from typing import TextIO
+from gpiozero import CPUTemperature
 
 from telemetry import TelemetryRecord, record_from_serial, record_from_random
 from constants import LOG_DIRECTORY, SERIAL_TIMEOUT, SERIAL_WAIT_TIME, MANIFEST
@@ -75,7 +76,7 @@ async def websocket_handler(request: web.Request):
     request.app['websockets'].append(ws)
     try:
         async for msg in ws:
-            print(f'Websocket message {msg}')
+            print_log(f'Websocket message {msg}')
             await asyncio.sleep(1)
     finally:
         request.app['websockets'].remove(ws)
@@ -90,6 +91,7 @@ async def send_telemetry(app: web.Application, telemetry: TelemetryRecord  | Non
         data_dict = telemetry.__dict__
         data_dict['log_file'] = state.log_file.name.split('/')[-1]
         data_dict['log_duration'] = (datetime.now() - state.log_start_time).total_seconds()
+        data_dict['cpu_temperature'] = CPUTemperature().temperature
         data = json.dumps(data_dict)
         state.log_record_count += 1
         for ws in app['websockets']:

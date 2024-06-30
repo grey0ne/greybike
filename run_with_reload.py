@@ -7,7 +7,7 @@ from typing import Any, Iterable
 
 
 def is_python(name: str):
-    return name.endswith(".py")
+    return name.endswith(".py") or name.endswith(".js") or name.endswith(".css")
 
 def end_child_process():
     process.send_signal(signal.SIGINT)

@@ -15,13 +15,27 @@ const PARAM_DICT = {
     'is_brake_pressed': {'name': 'Brake Pressed', 'unit': ''},
 }
 
+function initParamContainers() {
+    const paramContainer = document.getElementById("telemetry-params")
+    paramContainer.innerHTML = "";
+    for (param in PARAM_DICT) {
+        const paramData = PARAM_DICT[param];
+        const paramElem = document.createElement('div');
+        paramElem.innerHTML = `
+            <div>
+                <div><span id="${param}"></span> ${paramData.unit}</div>
+                <div>${paramData.name}</div>
+            </div>
+        `
+        paramContainer.appendChild(paramElem);
+    }
+}
 function onMessage(event) {
     const data = JSON.parse(event.data);
     const chart = window.chart;
     window.counter++;
 
     const paramContainer = document.getElementById("telemetry-params")
-    paramContainer.innerHTML = "";
     for (const key in data) {
         if (window.counter % GRAPH_FREQUENCY === 0) {
             for (const ds of chart.data.datasets) {
@@ -34,24 +48,17 @@ function onMessage(event) {
             }
         }
         const paramData = PARAM_DICT[key];
-        if (paramData) {
-            const paramElem = document.createElement('div');
+        const valueElem = document.getElementById(key);
+        if (paramData && valueElem) {
 	        const treshold = paramData.treshold || 0;
-            const value = data[key] > treshold ? data[key] : 0;
 	        let value = data[key] > treshold ? data[key] : 0;
-                if (typeof value === 'number') {
+            if (typeof value === 'number') {
 	            value = value.toFixed(2);
 	        }
-            paramElem.innerHTML = `
-                <div>
-                    <div><span id="${key}">${value}</span> ${paramData.unit}</div>
-                    <div>${paramData.name}</div>
-                </div>
-            `
-            paramContainer.appendChild(paramElem);
+            valueElem.innerText = value;
         }
     }
-    document.getElementById('log_duration').innerText = data['log_duration'];
+    document.getElementById('log_duration').innerText = data['log_duration'].toFixed(1);
     document.getElementById('log_file').innerText = data['log_file'];
     if (window.counter % GRAPH_FREQUENCY === 0) {
         if (chart.data.labels.length > MAX_POINTS) {
@@ -84,11 +91,6 @@ const BASE_CHART_DATA = {
                 data: [],
                 borderWidth: 1
             },
-            {
-                label: 'voltage',
-                data: [],
-                borderWidth: 1
-            },
         ]
     },
     options: {
@@ -107,6 +109,7 @@ resetFormSubmit = (event) => {
 }
 window.onload = () => {
     initializeConnection();
+    initParamContainers();
     document.getElementById('resetForm').addEventListener("submit", resetFormSubmit);
     const ctx = document.getElementById('myChart');
     window.counter = 0;

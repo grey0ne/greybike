@@ -38,7 +38,7 @@ PAGE_TEMPLATE = f"""
             </form>
         </div>
 
-        <div style="width: 800px; height: 400px;">
+        <div style="width: 100%; height: 400px;">
             <canvas id="myChart"></canvas>
         </div>
     </body>

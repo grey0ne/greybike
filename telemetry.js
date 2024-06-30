@@ -8,7 +8,8 @@ const PARAM_DICT = {
     'current': {'name': 'Current', 'unit': 'A'},
     'pedal_rpm': {'name': 'Pedaling RPM', 'unit': ''},
     'speed': {'name': 'Speed', 'unit': 'km/h'},
-    'motor_temp': {'name': 'Motor Temp', 'unit': '°C'},
+    'motor_temp': {'name': 'Motor Temp', 'unit': 'C'},
+    'cpu_temperature': {'name': 'CPU Temp', 'unit': 'C'},
     'trip_distance': {'name': 'Distance', 'unit': 'km'},
     'mode': {'name': 'Mode', 'unit': ''},
     'is_brake_pressed': {'name': 'Brake Pressed', 'unit': ''},
@@ -35,8 +36,12 @@ function onMessage(event) {
         const paramData = PARAM_DICT[key];
         if (paramData) {
             const paramElem = document.createElement('div');
-            const treshold = paramData.treshold || 0;
+	        const treshold = paramData.treshold || 0;
             const value = data[key] > treshold ? data[key] : 0;
+	        let value = data[key] > treshold ? data[key] : 0;
+                if (typeof value === 'number') {
+	            value = value.toFixed(2);
+	        }
             paramElem.innerHTML = `
                 <div>
                     <div><span id="${key}">${value}</span> ${paramData.unit}</div>

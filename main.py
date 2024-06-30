@@ -9,6 +9,7 @@ import serial
 from serial.serialutil import SerialException
 from dataclasses import dataclass
 from typing import TextIO
+from gpiozero import CPUTemperature
 
 from telemetry import TelemetryRecord, record_from_serial, record_from_random
 from constants import LOG_DIRECTORY, SERIAL_TIMEOUT, SERIAL_WAIT_TIME, MANIFEST
@@ -39,6 +40,9 @@ class AppState:
     log_start_time: datetime | None = None
     log_record_count: int = 0
 
+def print_log(log_str: str):
+    # Temporary wrapper to replacer with proper logging later
+    print(log_str)
 
 async def http_handler(request: web.Request):
     return web.Response(text=PAGE_TEMPLATE, content_type='text/html')
@@ -49,12 +53,12 @@ async def manifest_handler(request: web.Request):
 def reset_log(app: web.Application):
     state = app['state']
     if state.log_file is not None:
-        print(f'Closing log file {state.log_file.name}')
+        print_log(f'Closing log file {state.log_file.name}')
         state.log_file.close()
     state.log_record_count = 0
     state.log_start_time = datetime.now()
     log_file_path = os.path.join(LOG_DIRECTORY, f'{datetime.now().isoformat()}.log')
-    print(f'Logging to {log_file_path}')
+    print_log(f'Logging to {log_file_path}')
     state.log_file = open(log_file_path, 'w+')
     log_header = LOG_HEADER_TEMPLATE.format(
         version=LOG_VERSION, fields=','.join(LOG_FIELDS)
@@ -72,7 +76,7 @@ async def websocket_handler(request: web.Request):
     request.app['websockets'].append(ws)
     try:
         async for msg in ws:
-            print(f'Websocket message {msg}')
+            print_log(f'Websocket message {msg}')
             await asyncio.sleep(1)
     finally:
         request.app['websockets'].remove(ws)
@@ -87,6 +91,7 @@ async def send_telemetry(app: web.Application, telemetry: TelemetryRecord  | Non
         data_dict = telemetry.__dict__
         data_dict['log_file'] = state.log_file.name.split('/')[-1]
         data_dict['log_duration'] = (datetime.now() - state.log_start_time).total_seconds()
+        data_dict['cpu_temperature'] = CPUTemperature().temperature
         data = json.dumps(data_dict)
         state.log_record_count += 1
         for ws in app['websockets']:

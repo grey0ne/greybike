@@ -9,11 +9,16 @@ import serial
 from serial.serialutil import SerialException
 from dataclasses import dataclass
 from typing import TextIO
-from gpiozero import CPUTemperature # type: ignore
 
 from telemetry import TelemetryRecord, record_from_serial, record_from_random
 from constants import LOG_DIRECTORY, SERIAL_TIMEOUT, SERIAL_WAIT_TIME, MANIFEST
 from page import PAGE_TEMPLATE
+
+RUNNING_ON_PI = "rpi" in os.uname()[2]
+if RUNNING_ON_PI:
+    from gpiozero import CPUTemperature # type: ignore
+else:
+    CPUTemperature = None
 
 PORT = int(os.environ.get('PORT', 8080))
 INTERFACE = os.environ.get('SERIAL')
@@ -91,11 +96,10 @@ async def send_telemetry(app: web.Application, telemetry: TelemetryRecord  | Non
         data_dict = telemetry.__dict__
         data_dict['log_file'] = state.log_file.name.split('/')[-1]
         data_dict['log_duration'] = (datetime.now() - state.log_start_time).total_seconds()
-        try:
+        if CPUTemperature is not None:
             data_dict['cpu_temperature'] = CPUTemperature().temperature
-        except:
-            # Probably running on a non-Raspberry Pi device
-            pass
+        else:
+            data_dict['cpu_temperature'] = None
         data = json.dumps(data_dict)
         state.log_record_count += 1
         for ws in app['websockets']:

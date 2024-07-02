@@ -71,9 +71,7 @@ function onMessage(event) {
 
 function initializeConnection() {
     const socket = new WebSocket(`ws://${window.location.host}/ws`);
-
     socket.onmessage = onMessage
- 
 }
 
 const BASE_CHART_DATA = {
@@ -108,10 +106,13 @@ resetFormSubmit = (event) => {
     fetch(url, { method: 'POST'});
 }
 window.onload = () => {
-    initializeConnection();
-    initParamContainers();
-    document.getElementById('resetForm').addEventListener("submit", resetFormSubmit);
-    const ctx = document.getElementById('myChart');
-    window.counter = 0;
-    window.chart = new Chart(ctx, BASE_CHART_DATA);
+    const paramContainer = document.getElementById("telemetry-params")
+    if (paramContainer) {
+        initializeConnection();
+        initParamContainers();
+        document.getElementById('resetForm').addEventListener("submit", resetFormSubmit);
+        const ctx = document.getElementById('myChart');
+        window.counter = 0;
+        window.chart = new Chart(ctx, BASE_CHART_DATA);
+    }
 };

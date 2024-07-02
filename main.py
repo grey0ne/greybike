@@ -12,7 +12,8 @@ from typing import TextIO
 
 from telemetry import TelemetryRecord, record_from_serial, record_from_random
 from constants import LOG_DIRECTORY, SERIAL_TIMEOUT, SERIAL_WAIT_TIME, MANIFEST
-from page import PAGE_TEMPLATE
+from dash_page import DASH_PAGE_HTML
+from logs_page import render_logs_page
 
 RUNNING_ON_PI = "rpi" in os.uname()[2]
 if RUNNING_ON_PI:
@@ -50,7 +51,7 @@ def print_log(log_str: str):
     print(log_str)
 
 async def http_handler(request: web.Request):
-    return web.Response(text=PAGE_TEMPLATE, content_type='text/html')
+    return web.Response(text=DASH_PAGE_HTML, content_type='text/html')
 
 async def manifest_handler(request: web.Request):
     return web.Response(text=MANIFEST, content_type='application/json')
@@ -121,7 +122,7 @@ async def read_telemetry(app: web.Application):
                 await send_telemetry(app, telemetry)
                 await asyncio.sleep(SERIAL_WAIT_TIME)
     except SerialException:
-        print(f'Could not open serial interface {INTERFACE}')
+        print_log(f'Could not open serial interface {INTERFACE}')
 
 
 async def read_random_telemetry(app: web.Application):
@@ -147,10 +148,15 @@ async def start_background_tasks(app: web.Application):
 
 
 async def cleanup_background_tasks(app: web.Application):
-    print('cleanup background tasks...')
+    print_log('cleanup background tasks...')
     app[TELEMETRY_TASK].cancel()
     app['state'].log_file.close()
     await app[TELEMETRY_TASK]
+
+
+async def log_list_handler(request: web.Request):
+    log_files = os.listdir(LOG_DIRECTORY)
+    return web.Response(text=render_logs_page(log_files), content_type='text/html')
 
 
 def init():
@@ -163,6 +169,7 @@ def init():
         web.get('/',   http_handler),
         web.get('/ws', websocket_handler),
         web.get('/manifest.json', manifest_handler),
+        web.get('/logs', log_list_handler),
         web.post('/reset_log', reset_log_handler)
     ])
     app.on_startup.append(start_background_tasks)
@@ -178,7 +185,7 @@ def start_server():
 
 if __name__ == "__main__":
     if DEV_MODE:
-        print('Running in development mode. Telemetry will be generated randomly.')
+        print_log('Running in development mode. Telemetry will be generated randomly.')
     else:
-        print(f'Using serial interface {INTERFACE}')
+        print_log(f'Using serial interface {INTERFACE}')
     start_server()

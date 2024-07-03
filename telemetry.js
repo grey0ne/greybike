@@ -1,18 +1,24 @@
 const MAX_POINTS = 60;
 const GRAPH_FREQUENCY = 10;
+const SPEED_MODE = 'speed';
+const POWER_MODE = 'power';
+const TEMPERATURE_MODE = 'temperature';
+const ASSIST_MODE = 'assist';
+const DASH_MODES = [SPEED_MODE, POWER_MODE, TEMPERATURE_MODE, ASSIST_MODE];
+
 const PARAM_DICT = {
-    'amper_hours': {'name': 'Amper Hours', 'unit': 'Ah'},
-    'human_torque': {'name': 'Human Torque', 'unit': 'Nm', 'treshold': 1},
-    'human_watts': {'name': 'Human Power', 'unit': 'W'},
-    'voltage': {'name': 'Voltage', 'unit': 'V'},
-    'current': {'name': 'Current', 'unit': 'A'},
-    'pedal_rpm': {'name': 'Pedaling RPM', 'unit': ''},
-    'speed': {'name': 'Speed', 'unit': 'km/h'},
-    'motor_temp': {'name': 'Motor Temp', 'unit': 'C'},
-    'cpu_temperature': {'name': 'CPU Temp', 'unit': 'C'},
-    'trip_distance': {'name': 'Distance', 'unit': 'km'},
-    'mode': {'name': 'Mode', 'unit': ''},
-    'is_brake_pressed': {'name': 'Brake Pressed', 'unit': ''},
+    'amper_hours': {'name': 'Amper Hours', 'unit': 'Ah', 'modes': [POWER_MODE]},
+    'human_torque': {'name': 'Human Torque', 'unit': 'Nm', 'treshold': 1, 'modes': [POWER_MODE]},
+    'human_watts': {'name': 'Human Power', 'unit': 'W', 'modes': [POWER_MODE]},
+    'voltage': {'name': 'Voltage', 'unit': 'V', 'modes': [POWER_MODE]},
+    'current': {'name': 'Current', 'unit': 'A', 'modes': [POWER_MODE]},
+    'pedal_rpm': {'name': 'Pedaling RPM', 'unit': '', 'modes': [ASSIST_MODE]},
+    'speed': {'name': 'Speed', 'unit': 'km/h', 'modes': [SPEED_MODE]},
+    'motor_temp': {'name': 'Motor Temp', 'unit': 'C', 'modes': [TEMPERATURE_MODE]},
+    'cpu_temperature': {'name': 'CPU Temp', 'unit': 'C', 'modes': [TEMPERATURE_MODE]},
+    'trip_distance': {'name': 'Distance', 'unit': 'km', 'modes': [SPEED_MODE]},
+    'mode': {'name': 'Mode', 'unit': '', 'modes': []},
+    'is_brake_pressed': {'name': 'Brake Pressed', 'unit': '', 'modes': []},
 }
 
 function initParamContainers() {
@@ -20,6 +26,9 @@ function initParamContainers() {
     paramContainer.innerHTML = "";
     for (param in PARAM_DICT) {
         const paramData = PARAM_DICT[param];
+        if (!paramData.modes.includes(DASH_MODES[window.currentDashMode])) {
+            continue
+        }
         const paramElem = document.createElement('div');
         paramElem.innerHTML = `
             <div>
@@ -105,12 +114,23 @@ resetFormSubmit = (event) => {
     const url = document.getElementById('resetForm').getAttribute('action');
     fetch(url, { method: 'POST'});
 }
+
+changeMode = (event) => {
+    event.preventDefault();
+    window.currentDashMode += 1;
+    if (window.currentDashMode >= DASH_MODES.length) {
+        window.currentDashMode = 0;
+    }
+    initParamContainers();
+}
 window.onload = () => {
-    const paramContainer = document.getElementById("telemetry-params")
+    const paramContainer = document.getElementById("telemetry-params");
+    window.currentDashMode = 0;
     if (paramContainer) {
         initializeConnection();
         initParamContainers();
         document.getElementById('resetForm').addEventListener("submit", resetFormSubmit);
+        document.getElementById('next-mode-button').addEventListener("click", changeMode);
         const ctx = document.getElementById('myChart');
         window.counter = 0;
         window.chart = new Chart(ctx, BASE_CHART_DATA);

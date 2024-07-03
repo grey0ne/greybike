@@ -5,6 +5,14 @@ DASH_PAGE_HTML = render_page(
     <div id="telemetry-params">
     </div>
     <div>
+        <button id="next-mode-button">Next Mode</button>
+    </div>
+
+    <div style="width: 100%;">
+        <canvas id="myChart"></canvas>
+    </div>
+
+    <div>
         Log file:&nbsp;
         <span id="log_file">
         </span>
@@ -18,9 +26,8 @@ DASH_PAGE_HTML = render_page(
             <input name="submit" type="submit" value="Reset log file">
         </form>
     </div>
-
-    <div style="width: 100%; height: 400px;">
-        <canvas id="myChart"></canvas>
+    <div>
+        <a href="/logs">All Logs</a>
     </div>
 """
 )

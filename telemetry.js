@@ -32,11 +32,10 @@ function initParamContainers() {
             continue
         }
         const paramElem = document.createElement('div');
+        paramElem.className = 'param-container';
         paramElem.innerHTML = `
-            <div>
-                <div><span id="${param}"></span> ${paramData.unit}</div>
-                <div>${paramData.name}</div>
-            </div>
+            <div><span id="${param}"></span> ${paramData.unit}</div>
+            <div>${paramData.name}</div>
         `
         paramContainer.appendChild(paramElem);
     }

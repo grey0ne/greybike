@@ -33,6 +33,9 @@
     flex-grow: 1;
     margin: 0 4px;
 }
+.param-container {
+    height: 100px;
+}
 
 @media (max-width: 600px) {
     #telemetry-params > div {

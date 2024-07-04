@@ -27,6 +27,7 @@
 .row {
     margin: 10px 0;
     display: flex;
+    justify-content: center;
 }
 .row-elem {
     flex-grow: 1;

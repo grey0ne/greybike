@@ -12,16 +12,16 @@ DASH_PAGE_HTML = render_page(
         <canvas id="myChart"></canvas>
     </div>
 
-    <div class="row">
-            Log file:&nbsp;
+    <div class="row" style="justify-content:space-around">
+        <div>
             <span id="log_file">
             </span>
-    </div>
-    <div class="row">
-        Duration:&nbsp;
-        <span id="log_duration">
-        </span>
-        &nbsp;Seconds
+        </div>
+        <div>
+            <span id="log_duration">
+            </span>
+            &nbsp;Seconds
+        </div>
     </div>
     <div class="row">
         <form action="/reset_log" id="resetForm" class="row-elem" >

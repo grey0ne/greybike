@@ -24,9 +24,7 @@ DASH_PAGE_HTML = render_page(
         </div>
     </div>
     <div class="row">
-        <form action="/reset_log" id="resetForm" class="row-elem" >
-            <input name="submit" type="submit" value="Reset log file" class="default-button">
-        </form>
+        <button id="reset-log-button" class="default-button row-elem">Reset log file</button>
     </div>
     <div class="row">
         <a href="/logs" class="default-button row-elem">All Logs</a>

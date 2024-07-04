@@ -113,8 +113,7 @@ const BASE_CHART_DATA = {
 
 resetFormSubmit = (event) => {
     event.preventDefault();
-    const url = document.getElementById('resetForm').getAttribute('action');
-    fetch(url, { method: 'POST'});
+    fetch('/reset_log', { method: 'POST'});
 }
 
 changeMode = (event) => {
@@ -131,7 +130,7 @@ window.onload = () => {
     if (paramContainer) {
         initializeConnection();
         initParamContainers();
-        document.getElementById('resetForm').addEventListener("submit", resetFormSubmit);
+        document.getElementById('reset-log-button').addEventListener("click", resetFormSubmit);
         document.getElementById('next-mode-button').addEventListener("click", changeMode);
         const ctx = document.getElementById('myChart');
         window.counter = 0;

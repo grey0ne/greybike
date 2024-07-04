@@ -35,6 +35,9 @@
 }
 .param-container {
     height: 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
 @media (max-width: 600px) {

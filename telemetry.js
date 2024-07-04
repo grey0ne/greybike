@@ -1,10 +1,10 @@
 const MAX_POINTS = 60;
 const GRAPH_FREQUENCY = 10;
-const SPEED_MODE = 'speed';
-const POWER_MODE = 'power';
-const TEMPERATURE_MODE = 'temperature';
-const ASSIST_MODE = 'assist';
-const ODO_MODE = 'odo';
+const SPEED_MODE = 'speed_mode';
+const POWER_MODE = 'power_mode';
+const TEMPERATURE_MODE = 'temperature_mode';
+const ASSIST_MODE = 'assist_mode';
+const ODO_MODE = 'odo_mode';
 const DASH_MODES = [ASSIST_MODE, POWER_MODE, ODO_MODE];
 
 const PARAM_DICT = {
@@ -91,12 +91,12 @@ const BASE_CHART_DATA = {
         labels: [],
         datasets: [
             {
-                label: 'speed',
+                label: 'human_watts',
                 data: [],
                 borderWidth: 1
             },
             {
-                label: 'current',
+                label: 'motor_power',
                 data: [],
                 borderWidth: 1
             },

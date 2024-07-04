@@ -4,19 +4,21 @@ const SPEED_MODE = 'speed';
 const POWER_MODE = 'power';
 const TEMPERATURE_MODE = 'temperature';
 const ASSIST_MODE = 'assist';
-const DASH_MODES = [SPEED_MODE, POWER_MODE, TEMPERATURE_MODE, ASSIST_MODE];
+const ODO_MODE = 'odo';
+const DASH_MODES = [ASSIST_MODE, POWER_MODE, ODO_MODE];
 
 const PARAM_DICT = {
-    'amper_hours': {'name': 'Amper Hours', 'unit': 'Ah', 'modes': [POWER_MODE]},
-    'human_torque': {'name': 'Human Torque', 'unit': 'Nm', 'treshold': 1, 'modes': [POWER_MODE]},
-    'human_watts': {'name': 'Human Power', 'unit': 'W', 'modes': [POWER_MODE]},
+    'amper_hours': {'name': 'Amper Hours', 'unit': 'Ah', 'modes': [ODO_MODE]},
+    'human_torque': {'name': 'Human Torque', 'unit': 'Nm', 'treshold': 1, 'modes': []},
+    'human_watts': {'name': 'Human Power', 'unit': 'W', 'modes': [ASSIST_MODE]},
     'voltage': {'name': 'Voltage', 'unit': 'V', 'modes': [POWER_MODE]},
     'current': {'name': 'Current', 'unit': 'A', 'modes': [POWER_MODE]},
-    'pedal_rpm': {'name': 'Pedaling RPM', 'unit': '', 'modes': [ASSIST_MODE]},
-    'speed': {'name': 'Speed', 'unit': 'km/h', 'modes': [SPEED_MODE]},
-    'motor_temp': {'name': 'Motor Temp', 'unit': 'C', 'modes': [TEMPERATURE_MODE]},
-    'cpu_temperature': {'name': 'CPU Temp', 'unit': 'C', 'modes': [TEMPERATURE_MODE]},
-    'trip_distance': {'name': 'Distance', 'unit': 'km', 'modes': [SPEED_MODE]},
+    'motor_power': {'name': 'Motor Power', 'unit': 'W', 'modes': [ASSIST_MODE]},
+    'pedal_rpm': {'name': 'Pedaling RPM', 'unit': '', 'modes': [ASSIST_MODE, SPEED_MODE]},
+    'speed': {'name': 'Speed', 'unit': 'km/h', 'modes': [SPEED_MODE, ASSIST_MODE]},
+    'motor_temp': {'name': 'Motor Temp', 'unit': 'C', 'modes': [TEMPERATURE_MODE, POWER_MODE]},
+    'cpu_temperature': {'name': 'CPU Temp', 'unit': 'C', 'modes': [TEMPERATURE_MODE, POWER_MODE]},
+    'trip_distance': {'name': 'Distance', 'unit': 'km', 'modes': [ODO_MODE]},
     'mode': {'name': 'Mode', 'unit': '', 'modes': []},
     'is_brake_pressed': {'name': 'Brake Pressed', 'unit': '', 'modes': []},
 }
@@ -41,6 +43,7 @@ function initParamContainers() {
 }
 function onMessage(event) {
     const data = JSON.parse(event.data);
+    data['motor_power'] = data['voltage'] * data['current'];
     const chart = window.chart;
     window.counter++;
 

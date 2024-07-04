@@ -10,6 +10,29 @@
     flex-grow: 1;
 }
 
+.default-button {
+    width: 100%;
+    border-radius: 4px;
+    color: white;
+    background-color: rgb(26,115,232);
+    border: none;
+    display: block;
+    text-align: center;
+    text-decoration: none;
+    font-size: 12pt;
+    padding: 6pt;
+    box-sizing: border-box;
+    font-family: system-ui;
+}
+.row {
+    margin: 10px 0;
+    display: flex;
+}
+.row-elem {
+    flex-grow: 1;
+    margin: 0 4px;
+}
+
 @media (max-width: 600px) {
     #telemetry-params > div {
         width: 46%;

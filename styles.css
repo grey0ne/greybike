@@ -1,10 +1,11 @@
 #telemetry-params {
     display: flex;
     flex-wrap: wrap;
+    margin-bottom: 16px;
 }
 #telemetry-params > div {
     width: 28%;
-    font-size: 32px;
+    font-size: 28px;
     text-align: center;
     margin: 1%;
     flex-grow: 1;
@@ -48,6 +49,9 @@
     }
 }
 
-#telemetry-params span {
+.param-value {
     font-size: 48px;
+}
+.param-unit {
+    font-size: 24px;
 }

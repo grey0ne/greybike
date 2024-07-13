@@ -2,6 +2,7 @@ from datetime import datetime
 from pathlib import Path
 import json
 import os
+import psutil
 
 from aiohttp import web
 import asyncio
@@ -11,6 +12,7 @@ from serial.serialutil import SerialException
 from telemetry import TelemetryRecord, record_from_serial, record_from_random
 from constants import LOG_DIRECTORY, SERIAL_TIMEOUT, SERIAL_WAIT_TIME, MANIFEST
 from utils import print_log, AppState
+from tasks import create_task
 from logs import write_to_log, reset_log
 from dash_page import DASH_PAGE_HTML
 from logs_page import render_logs_page
@@ -52,16 +54,24 @@ async def websocket_handler(request: web.Request):
     return ws
 
 
+def read_system_params() -> dict[str, float | None]:
+    result: dict[str, float | None] = {}
+    if CPUTemperature is not None:
+        result['cpu_temperature'] = CPUTemperature().temperature
+    else:
+        result['cpu_temperature'] = None
+    result['memory_usage'] = psutil.virtual_memory().percent
+    result['cpu_usage'] = psutil.cpu_percent()
+    return result
+
+
 async def send_telemetry(app: web.Application, telemetry: TelemetryRecord  | None):
     state = app['state']
     if telemetry is not None:
         data_dict = telemetry.__dict__
         data_dict['log_file'] = state.log_file.name.split('/')[-1]
         data_dict['log_duration'] = (datetime.now() - state.log_start_time).total_seconds()
-        if CPUTemperature is not None:
-            data_dict['cpu_temperature'] = CPUTemperature().temperature
-        else:
-            data_dict['cpu_temperature'] = None
+        data_dict.update(read_system_params()) 
         data = json.dumps(data_dict)
         state.log_record_count += 1
         for ws in app['websockets']:
@@ -96,9 +106,9 @@ async def on_shutdown(app: web.Application):
 
 async def start_background_tasks(app: web.Application):
     if DEV_MODE:
-        app[TELEMETRY_TASK] = asyncio.create_task(read_random_telemetry(app))
+        app[TELEMETRY_TASK] = create_task(read_random_telemetry(app))
     else:
-        app[TELEMETRY_TASK] = asyncio.create_task(read_telemetry(app))
+        app[TELEMETRY_TASK] = create_task(read_telemetry(app))
 
 
 async def cleanup_background_tasks(app: web.Application):

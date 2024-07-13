@@ -1,23 +1,27 @@
 const MAX_POINTS = 60;
 const GRAPH_FREQUENCY = 10;
+
 const SPEED_MODE = 'speed_mode';
 const POWER_MODE = 'power_mode';
 const TEMPERATURE_MODE = 'temperature_mode';
 const ASSIST_MODE = 'assist_mode';
 const ODO_MODE = 'odo_mode';
-const DASH_MODES = [ASSIST_MODE, POWER_MODE, ODO_MODE];
+const SYSTEM_MODE = 'system_mode';
+const DASH_MODES = [ASSIST_MODE, POWER_MODE, ODO_MODE, SYSTEM_MODE];
 
 const PARAM_DICT = {
     'amper_hours': {'name': 'Amper Hours', 'unit': 'Ah', 'modes': [ODO_MODE]},
     'human_torque': {'name': 'Human Torque', 'unit': 'Nm', 'treshold': 1, 'modes': []},
-    'human_watts': {'name': 'Human Power', 'unit': 'W', 'modes': [ASSIST_MODE]},
+    'human_watts': {'name': 'Human', 'unit': 'W', 'modes': [ASSIST_MODE]},
     'voltage': {'name': 'Voltage', 'unit': 'V', 'modes': [POWER_MODE]},
     'current': {'name': 'Current', 'unit': 'A', 'modes': [POWER_MODE]},
-    'motor_power': {'name': 'Motor Power', 'unit': 'W', 'modes': [ASSIST_MODE]},
-    'pedal_rpm': {'name': 'Pedaling RPM', 'unit': '', 'modes': [ASSIST_MODE, SPEED_MODE]},
+    'motor_power': {'name': 'Motor', 'unit': 'W', 'modes': [ASSIST_MODE]},
+    'pedal_rpm': {'name': 'RPM', 'unit': '', 'modes': [ASSIST_MODE, SPEED_MODE]},
     'speed': {'name': 'Speed', 'unit': 'km/h', 'modes': [SPEED_MODE, ASSIST_MODE]},
     'motor_temp': {'name': 'Motor Temp', 'unit': 'C', 'modes': [TEMPERATURE_MODE, POWER_MODE]},
-    'cpu_temperature': {'name': 'CPU Temp', 'unit': 'C', 'modes': [TEMPERATURE_MODE, POWER_MODE]},
+    'cpu_temperature': {'name': 'CPU Temp', 'unit': 'C', 'modes': [SYSTEM_MODE]},
+    'cpu_usage': {'name': 'CPU Usage', 'unit': '%', 'modes': [SYSTEM_MODE]},
+    'memory_usage': {'name': 'Memory Usage', 'unit': '%', 'modes': [SYSTEM_MODE]},
     'trip_distance': {'name': 'Distance', 'unit': 'km', 'modes': [ODO_MODE]},
     'mode': {'name': 'Mode', 'unit': '', 'modes': []},
     'is_brake_pressed': {'name': 'Brake Pressed', 'unit': '', 'modes': []},
@@ -34,7 +38,10 @@ function initParamContainers() {
         const paramElem = document.createElement('div');
         paramElem.className = 'param-container';
         paramElem.innerHTML = `
-            <div><span id="${param}"></span> ${paramData.unit}</div>
+            <div>
+                <span class="param-value" id="${param}"></span>
+                <span class="param-unit">${paramData.unit}</span>
+            </div>
             <div>${paramData.name}</div>
         `
         paramContainer.appendChild(paramElem);

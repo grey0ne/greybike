@@ -47,12 +47,36 @@ function initParamContainers() {
         paramContainer.appendChild(paramElem);
     }
 }
+
+function processTelemetryMessage(data) {
+    window.counter++;
+    if (window.counter % GRAPH_FREQUENCY === 0) {
+        if (chart.data.labels.length > MAX_POINTS) {
+            chart.data.labels.shift();
+        }
+        chart.data.labels.push(window.counter / 10);
+        chart.update();
+    }
+}
+
+function processSystemMessage(data) {
+
+    const chart = window.chart;
+    if (data['log_file']){
+        document.getElementById('log_duration').innerText = data['log_duration'].toFixed(1);
+        document.getElementById('log_file').innerText = data['log_file'];
+    }
+}
+
 function onMessage(event) {
     const data = JSON.parse(event.data);
-    data['motor_power'] = data['voltage'] * data['current'];
-    const chart = window.chart;
-    window.counter++;
 
+    if (data['voltage']) {
+        data['motor_power'] = data['voltage'] * data['current'];
+        processTelemetryMessage(data);
+    } else {
+        processSystemMessage(data);
+    }
     const paramContainer = document.getElementById("telemetry-params")
     for (const key in data) {
         if (window.counter % GRAPH_FREQUENCY === 0) {
@@ -76,15 +100,7 @@ function onMessage(event) {
             valueElem.innerText = value;
         }
     }
-    document.getElementById('log_duration').innerText = data['log_duration'].toFixed(1);
-    document.getElementById('log_file').innerText = data['log_file'];
-    if (window.counter % GRAPH_FREQUENCY === 0) {
-        if (chart.data.labels.length > MAX_POINTS) {
-            chart.data.labels.shift();
-        }
-        chart.data.labels.push(window.counter / 10);
-        chart.update();
-    }
+
 }
 
 function initializeConnection() {

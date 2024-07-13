@@ -1,4 +1,5 @@
-from typing import Any, Coroutine, TypeVar
+from typing import Any, Coroutine, TypeVar, Callable
+from aiohttp import web
 import asyncio
 import logging
 
@@ -21,4 +22,15 @@ def create_task(
     task = asyncio.create_task(coroutine)
     task.add_done_callback(_handle_task_result)
     return task
+
+def create_periodic_task(
+    async_function: Callable[[web.Application], Coroutine[Any, Any, None]],
+    app: web.Application,
+    interval: float,
+) -> asyncio.Task[None]:
+    async def closure():
+        while True:
+            await async_function(app)
+            await asyncio.sleep(interval)
+    return create_task(closure())
 

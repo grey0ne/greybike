@@ -11,6 +11,7 @@ LOG_RECORD_COUNT_LIMIT = 36000 # One hour at 10 record/s rate
 
 SERIAL_TIMEOUT = 0.1
 SERIAL_WAIT_TIME = 0.05
+SYSTEM_PARAMS_INTERVAL = 0.5
 
 with open(MANIFEST_FILE) as manifest_file:
     MANIFEST = manifest_file.read()

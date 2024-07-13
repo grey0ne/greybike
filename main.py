@@ -10,9 +10,12 @@ import serial
 from serial.serialutil import SerialException
 
 from telemetry import TelemetryRecord, record_from_serial, record_from_random
-from constants import LOG_DIRECTORY, SERIAL_TIMEOUT, SERIAL_WAIT_TIME, MANIFEST
+from constants import (
+    LOG_DIRECTORY, SERIAL_TIMEOUT, SERIAL_WAIT_TIME,
+    SYSTEM_PARAMS_INTERVAL, MANIFEST
+)
 from utils import print_log, AppState
-from tasks import create_task
+from tasks import create_periodic_task
 from logs import write_to_log, reset_log
 from dash_page import DASH_PAGE_HTML
 from logs_page import render_logs_page
@@ -54,68 +57,71 @@ async def websocket_handler(request: web.Request):
     return ws
 
 
-def read_system_params() -> dict[str, float | None]:
-    result: dict[str, float | None] = {}
+async def read_system_params(app: web.Application):
+    data_dict: dict[str, float | None] = {}
+    state = app['state']
     if CPUTemperature is not None:
-        result['cpu_temperature'] = CPUTemperature().temperature
+        data_dict['cpu_temperature'] = CPUTemperature().temperature
     else:
-        result['cpu_temperature'] = None
-    result['memory_usage'] = psutil.virtual_memory().percent
-    result['cpu_usage'] = psutil.cpu_percent()
-    return result
+        data_dict['cpu_temperature'] = None
+    data_dict['memory_usage'] = psutil.virtual_memory().percent
+    data_dict['cpu_usage'] = psutil.cpu_percent()
+    data_dict['log_file'] = state.log_file.name.split('/')[-1]
+    data_dict['log_duration'] = (datetime.now() - state.log_start_time).total_seconds()
+    data = json.dumps(data_dict)
+    for ws in app['websockets']:
+        await ws.send_str(data)
 
 
 async def send_telemetry(app: web.Application, telemetry: TelemetryRecord  | None):
     state = app['state']
     if telemetry is not None:
         data_dict = telemetry.__dict__
-        data_dict['log_file'] = state.log_file.name.split('/')[-1]
-        data_dict['log_duration'] = (datetime.now() - state.log_start_time).total_seconds()
-        data_dict.update(read_system_params()) 
         data = json.dumps(data_dict)
         state.log_record_count += 1
         for ws in app['websockets']:
             await ws.send_str(data)
 
 async def read_telemetry(app: web.Application):
-    try:
-        with serial.Serial(INTERFACE, 9600, timeout=SERIAL_TIMEOUT) as ser:
-            while True:
-                telemetry = record_from_serial(ser)
-                write_to_log(app['state'], telemetry)
-                await send_telemetry(app, telemetry)
-                await asyncio.sleep(SERIAL_WAIT_TIME)
-    except SerialException:
-        print_log(f'Could not open serial interface {INTERFACE}')
-
-
-async def read_random_telemetry(app: web.Application):
-    previous = None
     while True:
-        telemetry = record_from_random(previous)
-        previous = telemetry
+        telemetry = record_from_serial(app['serial'])
         write_to_log(app['state'], telemetry)
         await send_telemetry(app, telemetry)
         await asyncio.sleep(SERIAL_WAIT_TIME)
 
 
+async def read_random_telemetry(app: web.Application):
+    state = app['state'] 
+    telemetry = record_from_random(state.last_telemetry)
+    state.last_telemetry = telemetry
+    write_to_log(app['state'], telemetry)
+    await send_telemetry(app, telemetry)
+
+
 async def on_shutdown(app: web.Application):
+    app['state'].log_file.close()
     for ws in app['websockets']:
         await ws.close(code=999, message='Server shutdown')
 
 
 async def start_background_tasks(app: web.Application):
     if DEV_MODE:
-        app[TELEMETRY_TASK] = create_task(read_random_telemetry(app))
+        app['tasks'].append(
+            create_periodic_task(read_random_telemetry, app, SERIAL_WAIT_TIME)
+        )
     else:
-        app[TELEMETRY_TASK] = create_task(read_telemetry(app))
+        app['tasks'].append(
+            create_periodic_task(read_telemetry, app, SERIAL_WAIT_TIME)
+        )
+        
+    app['tasks'].append(create_periodic_task(read_system_params, app, SYSTEM_PARAMS_INTERVAL))
 
 
 async def cleanup_background_tasks(app: web.Application):
     print_log('cleanup background tasks...')
-    app[TELEMETRY_TASK].cancel()
-    app['state'].log_file.close()
-    await app[TELEMETRY_TASK]
+    for task in app['tasks']:
+        task.cancel()
+        await app[task]
 
 
 async def log_list_handler(request: web.Request):
@@ -129,7 +135,13 @@ def get_all_log_files():
 def init():
     app = web.Application()
     app['websockets'] = []
+    app['tasks'] = []
     app['state'] = AppState(log_files=get_all_log_files())
+    if not DEV_MODE:
+        try:
+            app['serial'] = serial.Serial(INTERFACE, 9600, timeout=SERIAL_TIMEOUT)
+        except SerialException:
+            print_log(f'Could not open serial interface {INTERFACE}')
     Path(LOG_DIRECTORY).mkdir(parents=True, exist_ok=True)
     reset_log(app['state'])
     app.add_routes([

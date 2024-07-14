@@ -3,6 +3,7 @@ from pathlib import Path
 import json
 import os
 import psutil
+import subprocess
 
 from aiohttp import web
 import asyncio
@@ -30,6 +31,9 @@ PORT = int(os.environ.get('PORT', 8080))
 INTERFACE = os.environ.get('SERIAL')
 DEV_MODE = os.environ.get('DEV_MODE', 'false').lower() == 'true'
 TELEMETRY_TASK = 'telemetry_task'
+ROUTER_HOSTNAME = os.environ.get('ROUTER_HOSTNAME', 'router.grey')
+PING_TIMEOUT = 1 # In seconds
+PING_INTERVAL = 5 # In seconds
 
 
 
@@ -56,6 +60,22 @@ async def websocket_handler(request: web.Request):
         request.app['websockets'].remove(ws)
     return ws
 
+async def check_ping(hostname: str):
+    command = ['ping', '-c', '1', f'-w{PING_TIMEOUT}', hostname]
+    retcode = None
+    ping_process = subprocess.Popen(
+        args=command,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL
+    )
+    while retcode is None:
+        await asyncio.sleep(PING_TIMEOUT)
+        retcode = ping_process.poll()
+    return retcode == 0
+
+async def ping_router(app: web.Application):
+    if not await check_ping(ROUTER_HOSTNAME):
+        print_log(f'{ROUTER_HOSTNAME} is down')
 
 async def read_system_params(app: web.Application):
     data_dict: dict[str, float | None] = {}
@@ -105,27 +125,29 @@ async def on_shutdown(app: web.Application):
 
 
 async def start_background_tasks(app: web.Application):
+    state: AppState = app['state']
     if DEV_MODE:
-        app['tasks'].append(
-            create_periodic_task(read_random_telemetry, app, SERIAL_WAIT_TIME)
+        state.tasks.append(
+            create_periodic_task(read_random_telemetry, app, name="Telemetry(Random)", interval=SERIAL_WAIT_TIME)
         )
     else:
-        app['tasks'].append(
-            create_periodic_task(read_telemetry, app, SERIAL_WAIT_TIME)
+        state.tasks.append(
+            create_periodic_task(read_telemetry, app, name="Telemetry", interval=SERIAL_WAIT_TIME)
         )
         
-    app['tasks'].append(create_periodic_task(read_system_params, app, SYSTEM_PARAMS_INTERVAL))
+    state.tasks.append(create_periodic_task(read_system_params, app, name="System Params", interval=SYSTEM_PARAMS_INTERVAL))
+    state.tasks.append(create_periodic_task(ping_router, app, name="Router Ping", interval=PING_INTERVAL))
 
 
 async def cleanup_background_tasks(app: web.Application):
-    print_log('cleanup background tasks...')
-    for task in app['tasks']:
-        task.cancel()
-        await app[task]
+    state: AppState = app['state']
+    for task_data in state.tasks:
+        print_log(f'Cancelling task {task_data.name}')
+        task_data.task.cancel()
 
 
 async def log_list_handler(request: web.Request):
-    state = request.app['state']
+    state: AppState = request.app['state']
     return web.Response(text=render_logs_page(state.log_files), content_type='text/html')
 
 
@@ -135,7 +157,6 @@ def get_all_log_files():
 def init():
     app = web.Application()
     app['websockets'] = []
-    app['tasks'] = []
     app['state'] = AppState(log_files=get_all_log_files())
     if not DEV_MODE:
         try:

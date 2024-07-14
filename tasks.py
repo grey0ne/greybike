@@ -1,7 +1,7 @@
 from typing import Any, Coroutine, TypeVar, Callable
 from aiohttp import web
+from utils import TaskData, print_log
 import asyncio
-import logging
 
 def _handle_task_result(task: asyncio.Task[Any]) -> None:
     # This is used to log exceptions in tasks immediately when they are raised.
@@ -9,28 +9,36 @@ def _handle_task_result(task: asyncio.Task[Any]) -> None:
     try:
         task.result()
     except asyncio.CancelledError:
-        pass  # Task cancellation should not be logged as an error.
+        print_log(f'Task "{task.get_name()}" was cancelled')
+
     except Exception:  # pylint: disable=broad-except
-        logging.exception('Exception raised by task = %r', task)
+        print_log(f'Exception raised by task {task}')
 
 
 TaskResult = TypeVar('TaskResult')
 
 def create_task(
     coroutine: Coroutine[Any, Any, TaskResult],
+    name: str,
 ) -> asyncio.Task[TaskResult]:
-    task = asyncio.create_task(coroutine)
+    task = asyncio.create_task(coroutine, name=name)
     task.add_done_callback(_handle_task_result)
     return task
 
 def create_periodic_task(
     async_function: Callable[[web.Application], Coroutine[Any, Any, None]],
     app: web.Application,
+    name: str,
     interval: float,
-) -> asyncio.Task[None]:
+) -> TaskData:
     async def closure():
         while True:
             await async_function(app)
             await asyncio.sleep(interval)
-    return create_task(closure())
+    print_log(f"Creating task {name} with interval {interval}")
+    return TaskData(
+        name=name,
+        task=create_task(closure(), name=name),
+        interval=interval
+    )
 

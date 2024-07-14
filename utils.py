@@ -2,12 +2,12 @@ from dataclasses import dataclass, field
 from typing import TextIO
 from datetime import datetime
 from telemetry import TelemetryRecord
-from asyncio import Task
+import asyncio
 
 @dataclass
 class TaskData:
     name: str
-    task: Task[None]
+    task: asyncio.Task[None]
     interval: float
 
 @dataclass
@@ -23,3 +23,13 @@ class AppState:
 def print_log(log_str: str):
     # Temporary wrapper to replacer with proper logging later
     print(log_str)
+
+async def apopen(command: str) -> int | None:
+    process = await asyncio.create_subprocess_shell(
+        command,
+        stdout=asyncio.subprocess.DEVNULL,
+        stderr=asyncio.subprocess.DEVNULL
+    )
+    await process.communicate()
+    return process.returncode
+

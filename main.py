@@ -3,7 +3,6 @@ from pathlib import Path
 import json
 import os
 import psutil
-import subprocess
 
 from aiohttp import web
 import asyncio
@@ -15,7 +14,7 @@ from constants import (
     LOG_DIRECTORY, SERIAL_TIMEOUT, SERIAL_WAIT_TIME,
     SYSTEM_PARAMS_INTERVAL, MANIFEST
 )
-from utils import print_log, AppState
+from utils import print_log, AppState, apopen
 from tasks import create_periodic_task
 from logs import write_to_log, reset_log
 from dash_page import DASH_PAGE_HTML
@@ -60,22 +59,19 @@ async def websocket_handler(request: web.Request):
         request.app['websockets'].remove(ws)
     return ws
 
-async def check_ping(hostname: str):
-    command = ['ping', '-c', '1', f'-w{PING_TIMEOUT}', hostname]
-    retcode = None
-    ping_process = subprocess.Popen(
-        args=command,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL
-    )
-    while retcode is None:
-        await asyncio.sleep(PING_TIMEOUT)
-        retcode = ping_process.poll()
-    return retcode == 0
+async def restart_wifi():
+    if RUNNING_ON_PI:
+        restart_command = 'sudo ip link set wlan0 down && sleep 5 && sudo ip link set wlan0 up'
+        await apopen(restart_command)
+    else:
+        print_log('Restarting wifi not supported on this platform')
 
 async def ping_router(app: web.Application):
-    if not await check_ping(ROUTER_HOSTNAME):
-        print_log(f'{ROUTER_HOSTNAME} is down')
+    command = f'ping -c 1 -W{PING_TIMEOUT} {ROUTER_HOSTNAME}'
+    ping_result = await apopen(command)
+    if ping_result != 0:
+        print_log(f'{ROUTER_HOSTNAME} is down. Retcode: {ping_result}')
+        await restart_wifi()
 
 async def read_system_params(app: web.Application):
     data_dict: dict[str, float | None] = {}

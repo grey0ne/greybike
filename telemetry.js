@@ -103,9 +103,21 @@ function onMessage(event) {
 
 }
 
+function onClose(event) {
+    console.log('Socket is closed. Reconnect will be attempted in 1 second.', event.reason);
+    setTimeout(function() {
+        initializeConnection();
+    }, 1000);
+}
+
 function initializeConnection() {
     const socket = new WebSocket(`ws://${window.location.host}/ws`);
     socket.onmessage = onMessage
+    socket.onclose = onClose
+    socket.onerror = (err) => {
+        console.error('Socket encountered error. Closing socket');
+        socket.close();
+    }
 }
 
 const BASE_CHART_DATA = {

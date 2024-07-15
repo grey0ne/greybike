@@ -103,20 +103,15 @@ function onMessage(event) {
 
 }
 
-function onClose(event) {
-    console.log('Socket is closed. Reconnect will be attempted in 1 second.', event.reason);
-    setTimeout(function() {
-        initializeConnection();
-    }, 1000);
-}
 
-function initializeConnection() {
-    const socket = new WebSocket(`ws://${window.location.host}/ws`);
-    socket.onmessage = onMessage
-    socket.onclose = onClose
-    socket.onerror = (err) => {
-        console.error('Socket encountered error. Closing socket');
-        socket.close();
+function checkConnection() {
+    if (!window.socket || window.socket.readyState === WebSocket.CLOSED) {
+        window.socket = new WebSocket(`ws://${window.location.host}/ws`);
+        window.socket.onmessage = onMessage
+        window.socket.onerror = (err) => {
+            console.error('Socket encountered error. Closing socket');
+            window.socket.close();
+        }
     }
 }
 
@@ -163,7 +158,8 @@ window.onload = () => {
     const paramContainer = document.getElementById("telemetry-params");
     window.currentDashMode = 0;
     if (paramContainer) {
-        initializeConnection();
+        checkConnection();
+        var intervalId = setInterval(checkConnection, 1000);
         initParamContainers();
         document.getElementById('reset-log-button').addEventListener("click", resetFormSubmit);
         document.getElementById('next-mode-button').addEventListener("click", changeMode);

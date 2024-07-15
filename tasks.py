@@ -1,7 +1,10 @@
 from typing import Any, Coroutine, TypeVar, Callable
 from aiohttp import web
-from utils import TaskData, print_log
+from utils import TaskData
 import asyncio
+import logging
+
+logger = logging.getLogger('greybike')
 
 def _handle_task_result(task: asyncio.Task[Any]) -> None:
     # This is used to log exceptions in tasks immediately when they are raised.
@@ -9,10 +12,10 @@ def _handle_task_result(task: asyncio.Task[Any]) -> None:
     try:
         task.result()
     except asyncio.CancelledError:
-        print_log(f'Task "{task.get_name()}" was cancelled')
+        logger.info(f'Task "{task.get_name()}" was cancelled')
 
     except Exception:  # pylint: disable=broad-except
-        print_log(f'Exception raised by task {task}')
+        logger.error(f'Exception raised by task {task}')
 
 
 TaskResult = TypeVar('TaskResult')
@@ -35,7 +38,7 @@ def create_periodic_task(
         while True:
             await async_function(app)
             await asyncio.sleep(interval)
-    print_log(f"Creating task {name} with interval {interval}")
+    logger.info(f"Creating task {name} with interval {interval}")
     return TaskData(
         name=name,
         task=create_task(closure(), name=name),

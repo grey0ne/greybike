@@ -3,18 +3,19 @@ from pathlib import Path
 import json
 import os
 import psutil
-
-from aiohttp import web
+import logging
 import asyncio
 import serial
+
+from aiohttp import web
 from serial.serialutil import SerialException
 
 from telemetry import TelemetryRecord, record_from_serial, record_from_random
 from constants import (
-    LOG_DIRECTORY, SERIAL_TIMEOUT, SERIAL_WAIT_TIME,
-    SYSTEM_PARAMS_INTERVAL, MANIFEST
+    TELEMETRY_LOG_DIRECTORY, SERIAL_TIMEOUT, SERIAL_WAIT_TIME,
+    SYSTEM_PARAMS_INTERVAL, MANIFEST, APP_LOG_FILE, APP_LOG_DIRECTORY
 )
-from utils import print_log, AppState, apopen
+from utils import AppState, apopen
 from tasks import create_periodic_task
 from logs import write_to_log, reset_log
 from dash_page import DASH_PAGE_HTML
@@ -34,7 +35,35 @@ ROUTER_HOSTNAME = os.environ.get('ROUTER_HOSTNAME', 'router.grey')
 PING_TIMEOUT = 1 # In seconds
 PING_INTERVAL = 5 # In seconds
 
+LOGGING = {
+    'version': 1,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': APP_LOG_FILE,
+            'encoding': 'utf-8',
+        }
+    },
+    'greybike': {
+        'level': 'DEBUG',
+        'handlers': ['console']
+    },
+}
+if DEV_MODE:
+    LOGGING['greybike'] = {
+        'level': 'DEBUG',
+        'handlers': ['console']
+    }
+else:
+    LOGGING['greybike'] = {
+        'level': 'INFO',
+        'handlers': ['file']
+    }
 
+logger = logging.getLogger('greybike')
 
 async def http_handler(request: web.Request):
     return web.Response(text=DASH_PAGE_HTML, content_type='text/html')
@@ -53,7 +82,7 @@ async def websocket_handler(request: web.Request):
     request.app['websockets'].append(ws)
     try:
         async for msg in ws:
-            print_log(f'Websocket message {msg}')
+            logger.debug(f'Websocket message {msg}')
             await asyncio.sleep(1)
     finally:
         request.app['websockets'].remove(ws)
@@ -61,16 +90,17 @@ async def websocket_handler(request: web.Request):
 
 async def restart_wifi():
     if RUNNING_ON_PI:
+        logger.info('Restarting WiFi interface')
         restart_command = 'sudo ip link set wlan0 down && sleep 5 && sudo ip link set wlan0 up'
         await apopen(restart_command)
     else:
-        print_log('Restarting wifi not supported on this platform')
+        logger.error('Restarting wifi not supported on this platform')
 
 async def ping_router(app: web.Application):
     command = f'ping -c 1 -W{PING_TIMEOUT} {ROUTER_HOSTNAME}'
     ping_result = await apopen(command)
     if ping_result != 0:
-        print_log(f'{ROUTER_HOSTNAME} is down. Retcode: {ping_result}')
+        logger.warning(f'{ROUTER_HOSTNAME} ping failed. Return code: {ping_result}')
         await restart_wifi()
 
 async def read_system_params(app: web.Application):
@@ -138,7 +168,7 @@ async def start_background_tasks(app: web.Application):
 async def cleanup_background_tasks(app: web.Application):
     state: AppState = app['state']
     for task_data in state.tasks:
-        print_log(f'Cancelling task {task_data.name}')
+        logger.info(f'Cancelling task {task_data.name}')
         task_data.task.cancel()
 
 
@@ -148,9 +178,11 @@ async def log_list_handler(request: web.Request):
 
 
 def get_all_log_files():
-    return os.listdir(LOG_DIRECTORY)
+    return os.listdir(TELEMETRY_LOG_DIRECTORY)
 
 def init():
+    Path(TELEMETRY_LOG_DIRECTORY).mkdir(parents=True, exist_ok=True)
+    Path(APP_LOG_DIRECTORY).mkdir(parents=True, exist_ok=True)
     app = web.Application()
     app['websockets'] = []
     app['state'] = AppState(log_files=get_all_log_files())
@@ -158,8 +190,7 @@ def init():
         try:
             app['serial'] = serial.Serial(INTERFACE, 9600, timeout=SERIAL_TIMEOUT)
         except SerialException:
-            print_log(f'Could not open serial interface {INTERFACE}')
-    Path(LOG_DIRECTORY).mkdir(parents=True, exist_ok=True)
+            logger.error(f'Could not open serial interface {INTERFACE}')
     reset_log(app['state'])
     app.add_routes([
         web.get('/',   http_handler),
@@ -181,7 +212,7 @@ def start_server():
 
 if __name__ == "__main__":
     if DEV_MODE:
-        print_log('Running in development mode. Telemetry will be generated randomly.')
+        logger.info('Running in development mode. Telemetry will be generated randomly.')
     else:
-        print_log(f'Using serial interface {INTERFACE}')
+        logger.info(f'Using serial interface {INTERFACE}')
     start_server()

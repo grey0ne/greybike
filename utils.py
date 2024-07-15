@@ -20,10 +20,6 @@ class AppState:
     tasks: list[TaskData] = field(default_factory=lambda: [])
 
 
-def print_log(log_str: str):
-    # Temporary wrapper to replacer with proper logging later
-    print(log_str)
-
 async def apopen(command: str) -> int | None:
     process = await asyncio.create_subprocess_shell(
         command,

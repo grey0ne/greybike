@@ -4,7 +4,9 @@ SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))
 MANIFEST_FILE = os.path.join(SOURCE_DIR, 'manifest.json')
 JS_FILE = os.path.join(SOURCE_DIR, 'telemetry.js')
 STYLES_FILE = os.path.join(SOURCE_DIR, 'styles.css')
-LOG_DIRECTORY = os.path.join(SOURCE_DIR, 'logs')
+TELEMETRY_LOG_DIRECTORY = os.path.join(SOURCE_DIR, 'telemetry_logs')
+APP_LOG_DIRECTORY = os.path.join(SOURCE_DIR, 'app_logs')
+APP_LOG_FILE = os.path.join(APP_LOG_DIRECTORY, 'app.log')
 
 LOG_VERSION = '1'
 LOG_RECORD_COUNT_LIMIT = 36000 # One hour at 10 record/s rate

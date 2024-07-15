@@ -1,8 +1,11 @@
-from constants import LOG_VERSION, LOG_DIRECTORY, LOG_RECORD_COUNT_LIMIT
+from constants import LOG_VERSION, TELEMETRY_LOG_DIRECTORY, LOG_RECORD_COUNT_LIMIT
 from datetime import datetime
-from utils import print_log, AppState
+from utils import AppState
 from telemetry import TelemetryRecord
 import os
+import logging
+
+logger = logging.getLogger('greybike')
 
 LOG_HEADER_TEMPLATE = """
 GREYBIKE LOG
@@ -29,13 +32,13 @@ def write_to_log(state: AppState, telemetry: TelemetryRecord | None):
 
 def reset_log(state: AppState):
     if state.log_file is not None:
-        print_log(f'Closing log file {state.log_file.name}')
+        logger.info(f'Closing log file {state.log_file.name}')
         state.log_file.close()
     state.log_record_count = 0
     state.log_start_time = datetime.now()
     log_file_name = f'{state.log_start_time.isoformat()}.log'
-    log_file_path = os.path.join(LOG_DIRECTORY, log_file_name)
-    print_log(f'Logging to {log_file_path}')
+    log_file_path = os.path.join(TELEMETRY_LOG_DIRECTORY, log_file_name)
+    logger.info(f'Logging telemetry to {log_file_path}')
     state.log_file = open(log_file_path, 'w+')
     state.log_files.append(log_file_name)
     log_header = LOG_HEADER_TEMPLATE.format(

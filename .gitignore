@@ -1,4 +1,5 @@
 __pycache__
-logs
+telemetry_logs
+app_logs
 .venv
 .env

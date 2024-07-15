@@ -4,6 +4,7 @@ import json
 import os
 import psutil
 import logging
+import logging.config
 import asyncio
 import serial
 
@@ -63,6 +64,7 @@ else:
         'handlers': ['file']
     }
 
+logging.config.dictConfig(LOGGING)
 logger = logging.getLogger('greybike')
 
 async def http_handler(request: web.Request):

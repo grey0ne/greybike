@@ -1,5 +1,6 @@
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 import json
 import os
 import psutil
@@ -36,30 +37,34 @@ ROUTER_HOSTNAME = os.environ.get('ROUTER_HOSTNAME', 'router.grey')
 PING_TIMEOUT = 1 # In seconds
 PING_INTERVAL = 5 # In seconds
 
-LOGGING = {
+LOGGING: dict[str, Any] = {
     'version': 1,
+    'formatters': {
+        'timestamp': {
+            'format': '%(asctime)s %(message)s',
+        }
+    },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
+            'formatter': 'timestamp'
         },
         'file': {
             'class': 'logging.FileHandler',
             'filename': APP_LOG_FILE,
             'encoding': 'utf-8',
+            'formatter': 'timestamp'
         }
     },
-    'greybike': {
-        'level': 'DEBUG',
-        'handlers': ['console']
-    },
+    'loggers': {}
 }
 if DEV_MODE:
-    LOGGING['greybike'] = {
+    LOGGING['loggers']['greybike'] = {
         'level': 'DEBUG',
         'handlers': ['console']
     }
 else:
-    LOGGING['greybike'] = {
+    LOGGING['loggers']['greybike'] = {
         'level': 'INFO',
         'handlers': ['file']
     }

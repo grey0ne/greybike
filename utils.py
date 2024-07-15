@@ -20,7 +20,7 @@ class AppState:
     tasks: list[TaskData] = field(default_factory=lambda: [])
 
 
-async def apopen(command: str) -> int | None:
+async def async_shell(command: str) -> int | None:
     process = await asyncio.create_subprocess_shell(
         command,
         stdout=asyncio.subprocess.DEVNULL,

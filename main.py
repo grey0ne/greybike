@@ -17,7 +17,7 @@ from constants import (
     TELEMETRY_LOG_DIRECTORY, SERIAL_TIMEOUT, SERIAL_WAIT_TIME,
     SYSTEM_PARAMS_INTERVAL, MANIFEST, APP_LOG_FILE, APP_LOG_DIRECTORY
 )
-from utils import AppState, apopen
+from utils import AppState, async_shell
 from tasks import create_periodic_task
 from logs import write_to_log, reset_log
 from dash_page import DASH_PAGE_HTML
@@ -99,13 +99,14 @@ async def restart_wifi():
     if RUNNING_ON_PI:
         logger.info('Restarting WiFi interface')
         restart_command = 'sudo ip link set wlan0 down && sleep 5 && sudo ip link set wlan0 up'
-        await apopen(restart_command)
+        await async_shell(restart_command)
+        await asyncio.sleep(10) # Wait for wifi to come back up
     else:
         logger.error('Restarting wifi not supported on this platform')
 
 async def ping_router(app: web.Application):
     command = f'ping -c 1 -W{PING_TIMEOUT} {ROUTER_HOSTNAME}'
-    ping_result = await apopen(command)
+    ping_result = await async_shell(command)
     if ping_result != 0:
         logger.warning(f'{ROUTER_HOSTNAME} ping failed. Return code: {ping_result}')
         await restart_wifi()

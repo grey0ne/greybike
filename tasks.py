@@ -33,15 +33,16 @@ def create_periodic_task(
     app: web.Application,
     name: str,
     interval: float,
-) -> TaskData:
+) -> None:
     async def closure():
         while True:
             await async_function(app)
             await asyncio.sleep(interval)
     logger.info(f"Creating task {name} with interval {interval}")
-    return TaskData(
+    task = TaskData(
         name=name,
         task=create_task(closure(), name=name),
         interval=interval
     )
+    app['state'].tasks.append(task)
 

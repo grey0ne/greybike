@@ -9,6 +9,10 @@ const ODO_MODE = 'odo_mode';
 const SYSTEM_MODE = 'system_mode';
 const DASH_MODES = [ASSIST_MODE, POWER_MODE, ODO_MODE, SYSTEM_MODE];
 
+const TELEMETRY_MESSAGE = 'telemetry';
+const SYSTEM_MESSAGE = 'system';
+const STATUS_MESSAGE = 'status';
+
 const PARAM_DICT = {
     'amper_hours': {'name': 'Amper Hours', 'unit': 'Ah', 'modes': [ODO_MODE]},
     'human_torque': {'name': 'Human Torque', 'unit': 'Nm', 'treshold': 1, 'modes': []},
@@ -69,12 +73,13 @@ function processSystemMessage(data) {
 }
 
 function onMessage(event) {
-    const data = JSON.parse(event.data);
-
-    if (data['voltage']) {
+    const message = JSON.parse(event.data);
+    const data = message['data'];
+    if (message['type'] === TELEMETRY_MESSAGE) {
         data['motor_power'] = data['voltage'] * data['current'];
         processTelemetryMessage(data);
-    } else {
+    }
+    if (message['type'] === SYSTEM_MESSAGE) {
         processSystemMessage(data);
     }
     const paramContainer = document.getElementById("telemetry-params")
@@ -167,4 +172,4 @@ window.onload = () => {
         window.counter = 0;
         window.chart = new Chart(ctx, BASE_CHART_DATA);
     }
-};
+}

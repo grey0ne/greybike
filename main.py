@@ -1,25 +1,24 @@
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+from enum import StrEnum
 import json
 import os
 import psutil
 import logging
 import logging.config
 import asyncio
-import serial
 
 from aiohttp import web
-from serial.serialutil import SerialException
 
-from telemetry import TelemetryRecord, record_from_serial, record_from_random
+from telemetry import TelemetryRecord, record_from_serial, record_from_random, get_serial_interface
 from constants import (
-    TELEMETRY_LOG_DIRECTORY, SERIAL_TIMEOUT, SERIAL_WAIT_TIME,
+    TELEMETRY_LOG_DIRECTORY, SERIAL_WAIT_TIME,
     SYSTEM_PARAMS_INTERVAL, MANIFEST, APP_LOG_FILE, APP_LOG_DIRECTORY
 )
 from utils import AppState, async_shell
 from tasks import create_periodic_task
-from logs import write_to_log, reset_log
+from telemetry_logs import write_to_log, reset_log
 from dash_page import DASH_PAGE_HTML
 from logs_page import render_logs_page
 
@@ -30,12 +29,16 @@ else:
     CPUTemperature = None
 
 PORT = int(os.environ.get('PORT', 8080))
-INTERFACE = os.environ.get('SERIAL')
 DEV_MODE = os.environ.get('DEV_MODE', 'false').lower() == 'true'
 TELEMETRY_TASK = 'telemetry_task'
 ROUTER_HOSTNAME = os.environ.get('ROUTER_HOSTNAME', 'router.grey')
 PING_TIMEOUT = 1 # In seconds
 PING_INTERVAL = 5 # In seconds
+
+class MessageType(StrEnum):
+    SYSTEM = 'system'
+    TELEMETRY = 'telemetry'
+    EVENT = 'event'
 
 LOGGING: dict[str, Any] = {
     'version': 1,
@@ -111,6 +114,16 @@ async def ping_router(app: web.Application):
         logger.warning(f'{ROUTER_HOSTNAME} ping failed. Return code: {ping_result}')
         await restart_wifi()
 
+async def send_ws_message(app: web.Application, message_type: MessageType, data: dict[str, Any]):
+    message = {
+        'type': message_type,
+        'data': data
+    }
+    message_str = json.dumps(message)
+    for ws in app['websockets']:
+        await ws.send_str(message_str)
+
+
 async def read_system_params(app: web.Application):
     data_dict: dict[str, float | None] = {}
     state = app['state']
@@ -122,26 +135,21 @@ async def read_system_params(app: web.Application):
     data_dict['cpu_usage'] = psutil.cpu_percent()
     data_dict['log_file'] = state.log_file.name.split('/')[-1]
     data_dict['log_duration'] = (datetime.now() - state.log_start_time).total_seconds()
-    data = json.dumps(data_dict)
-    for ws in app['websockets']:
-        await ws.send_str(data)
+    await send_ws_message(app, MessageType.SYSTEM, data_dict)
 
 
 async def send_telemetry(app: web.Application, telemetry: TelemetryRecord  | None):
     state = app['state']
     if telemetry is not None:
         data_dict = telemetry.__dict__
-        data = json.dumps(data_dict)
         state.log_record_count += 1
-        for ws in app['websockets']:
-            await ws.send_str(data)
+        await send_ws_message(app, MessageType.TELEMETRY, data_dict)
+
 
 async def read_telemetry(app: web.Application):
-    while True:
-        telemetry = record_from_serial(app['serial'])
-        write_to_log(app['state'], telemetry)
-        await send_telemetry(app, telemetry)
-        await asyncio.sleep(SERIAL_WAIT_TIME)
+    telemetry = record_from_serial(app['serial'])
+    write_to_log(app['state'], telemetry)
+    await send_telemetry(app, telemetry)
 
 
 async def read_random_telemetry(app: web.Application):
@@ -159,18 +167,12 @@ async def on_shutdown(app: web.Application):
 
 
 async def start_background_tasks(app: web.Application):
-    state: AppState = app['state']
     if DEV_MODE:
-        state.tasks.append(
-            create_periodic_task(read_random_telemetry, app, name="Telemetry(Random)", interval=SERIAL_WAIT_TIME)
-        )
+        create_periodic_task(read_random_telemetry, app, name="Telemetry(Random)", interval=SERIAL_WAIT_TIME)
     else:
-        state.tasks.append(
-            create_periodic_task(read_telemetry, app, name="Telemetry", interval=SERIAL_WAIT_TIME)
-        )
-        
-    state.tasks.append(create_periodic_task(read_system_params, app, name="System Params", interval=SYSTEM_PARAMS_INTERVAL))
-    state.tasks.append(create_periodic_task(ping_router, app, name="Router Ping", interval=PING_INTERVAL))
+        create_periodic_task(ping_router, app, name="Router Ping", interval=PING_INTERVAL)
+        create_periodic_task(read_telemetry, app, name="Telemetry", interval=SERIAL_WAIT_TIME)
+    create_periodic_task(read_system_params, app, name="System Params", interval=SYSTEM_PARAMS_INTERVAL)
 
 
 async def cleanup_background_tasks(app: web.Application):
@@ -195,10 +197,7 @@ def init():
     app['websockets'] = []
     app['state'] = AppState(log_files=get_all_log_files())
     if not DEV_MODE:
-        try:
-            app['serial'] = serial.Serial(INTERFACE, 9600, timeout=SERIAL_TIMEOUT)
-        except SerialException:
-            logger.error(f'Could not open serial interface {INTERFACE}')
+        app['serial'] = get_serial_interface()
     reset_log(app['state'])
     app.add_routes([
         web.get('/',   http_handler),
@@ -221,6 +220,4 @@ def start_server():
 if __name__ == "__main__":
     if DEV_MODE:
         logger.info('Running in development mode. Telemetry will be generated randomly.')
-    else:
-        logger.info(f'Using serial interface {INTERFACE}')
     start_server()

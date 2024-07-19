@@ -5,8 +5,6 @@ from telemetry import TelemetryRecord
 import os
 import logging
 
-logger = logging.getLogger('greybike')
-
 LOG_HEADER_TEMPLATE = """
 GREYBIKE LOG
 VERSION v{version}
@@ -31,6 +29,7 @@ def write_to_log(state: AppState, telemetry: TelemetryRecord | None):
 
 
 def reset_log(state: AppState):
+    logger = logging.getLogger('greybike')
     if state.log_file is not None:
         logger.info(f'Closing log file {state.log_file.name}')
         state.log_file.close()

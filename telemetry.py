@@ -1,7 +1,13 @@
 from dataclasses import dataclass
 import random
 import serial
+import os
+from serial.serialutil import SerialException
+from constants import SERIAL_TIMEOUT, SERIAL_BAUD_RATE
 
+INTERFACE = os.environ.get('SERIAL')
+
+import logging
 
 @dataclass
 class TelemetryRecord:
@@ -46,11 +52,12 @@ def record_from_values(values: list[str]):
 
 
 def record_from_serial(ser: serial.Serial) -> TelemetryRecord | None:
+    logger = logging.getLogger('greybike')
     line = ser.readline()
     try:
         values = line.decode("utf-8").split("\t")
     except Exception as e:
-        print(e)
+        logger.error(f'Error decoding serial line: {e}')
         return None
     if len(values) < 14:
         return None
@@ -95,3 +102,11 @@ def record_from_random(previous: TelemetryRecord | None) -> TelemetryRecord:
  
     )
 
+def get_serial_interface() -> serial.Serial | None:
+    logger = logging.getLogger('greybike')
+    try:
+        ser = serial.Serial(INTERFACE, SERIAL_BAUD_RATE, timeout=SERIAL_TIMEOUT)
+        logger.info(f'Using serial interface {INTERFACE}')
+        return ser
+    except SerialException:
+        logger.error(f'Could not open serial interface {INTERFACE}')

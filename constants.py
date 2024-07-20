@@ -6,6 +6,7 @@ JS_FILE = os.path.join(SOURCE_DIR, 'telemetry.js')
 STYLES_FILE = os.path.join(SOURCE_DIR, 'styles.css')
 TELEMETRY_LOG_DIRECTORY = os.path.join(SOURCE_DIR, 'telemetry_logs')
 APP_LOG_DIRECTORY = os.path.join(SOURCE_DIR, 'app_logs')
+FAVICON_DIRECTORY = os.path.join(SOURCE_DIR, 'icons')
 APP_LOG_FILE = os.path.join(APP_LOG_DIRECTORY, 'app.log')
 
 LOG_VERSION = '1'

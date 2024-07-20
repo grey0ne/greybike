@@ -72,10 +72,27 @@ function processSystemMessage(data) {
     }
 }
 
+function getWakeLock() {
+    if (window.wakeLock) {
+        return;
+    }
+    window.wakeLock = 'requesting';
+    navigator.wakeLock.request("screen").then(
+        (wakeLock) => {window.wakeLock = wakeLock}
+    )
+}
+function releaseWakeLock() {
+    if (window.wakeLock) {
+        window.wakeLock.release();
+        window.wakeLock = null;
+    }
+}
+
 function onMessage(event) {
     const message = JSON.parse(event.data);
     const data = message['data'];
     if (message['type'] === TELEMETRY_MESSAGE) {
+        getWakeLock(); // Only request wake lock if we have a telemetry
         data['motor_power'] = data['voltage'] * data['current'];
         processTelemetryMessage(data);
     }

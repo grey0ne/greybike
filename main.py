@@ -13,7 +13,7 @@ from aiohttp import web
 
 from telemetry import TelemetryRecord, record_from_serial, record_from_random, get_serial_interface
 from constants import (
-    TELEMETRY_LOG_DIRECTORY, SERIAL_WAIT_TIME,
+    TELEMETRY_LOG_DIRECTORY, SERIAL_WAIT_TIME, FAVICON_DIRECTORY,
     SYSTEM_PARAMS_INTERVAL, MANIFEST, APP_LOG_FILE, APP_LOG_DIRECTORY
 )
 from utils import AppState, async_shell
@@ -28,6 +28,7 @@ if RUNNING_ON_PI:
 else:
     CPUTemperature = None
 
+FAVICON_FILES = ['favicon-16.png', 'favicon-32.png', 'favicon-96.png', 'touch-icon-76.png']
 PORT = int(os.environ.get('PORT', 8080))
 DEV_MODE = os.environ.get('DEV_MODE', 'false').lower() == 'true'
 TELEMETRY_TASK = 'telemetry_task'
@@ -85,6 +86,10 @@ async def reset_log_handler(request: web.Request):
     reset_log(request.app['state'])
     return web.Response(text='Log file reset')
 
+def get_file_serve_handler(file_path: str):
+    async def file_serve_handler(request: web.Request):
+        return web.FileResponse(file_path)
+    return file_serve_handler
 
 async def websocket_handler(request: web.Request):
     ws = web.WebSocketResponse()
@@ -206,6 +211,10 @@ def init():
         web.get('/logs', log_list_handler),
         web.post('/reset_log', reset_log_handler)
     ])
+    for icon_file in FAVICON_FILES:
+        app.add_routes([
+            web.get(f'/{icon_file}', get_file_serve_handler(f'{FAVICON_DIRECTORY}/{icon_file}'))
+        ])
     app.on_startup.append(start_background_tasks)
     app.on_cleanup.append(cleanup_background_tasks)
     app.on_shutdown.append(on_shutdown)

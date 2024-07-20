@@ -15,6 +15,10 @@ HEAD_HTML = f"""
     <meta name="apple-mobile-web-app-status-bar-style" content="black" />
     <meta name="apple-mobile-web-app-title" content="Telemetry" />
     <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/png" href="/favicon-16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="/favicon-32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/favicon-96.png" sizes="96x96">
+    <link rel="apple-touch-icon" sizes="76x76" href="/touch-icon-76.png">
     <style>
         {STYLES_CONTENT}
     </style>

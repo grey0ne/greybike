@@ -77,9 +77,11 @@ function getWakeLock() {
         return;
     }
     window.wakeLock = 'requesting';
-    navigator.wakeLock.request("screen").then(
-        (wakeLock) => {window.wakeLock = wakeLock}
-    )
+    if (navigator.wakeLock) {
+        navigator.wakeLock.request("screen").then(
+            (wakeLock) => {window.wakeLock = wakeLock}
+        )
+    }
 }
 function releaseWakeLock() {
     if (window.wakeLock) {

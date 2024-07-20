@@ -14,16 +14,18 @@ from aiohttp import web
 from telemetry import TelemetryRecord, record_from_serial, record_from_random, get_serial_interface
 from constants import (
     TELEMETRY_LOG_DIRECTORY, SERIAL_WAIT_TIME, FAVICON_DIRECTORY,
-    SYSTEM_PARAMS_INTERVAL, MANIFEST, APP_LOG_FILE, APP_LOG_DIRECTORY
+    SYSTEM_PARAMS_INTERVAL, MANIFEST, APP_LOG_FILE, APP_LOG_DIRECTORY,
+    PING_INTERVAL
 )
-from utils import AppState, async_shell
+from utils import AppState, check_running_on_pi
 from tasks import create_periodic_task
 from telemetry_logs import write_to_log, reset_log
 from dash_page import DASH_PAGE_HTML
 from logs_page import render_logs_page
+from wifi import ping_router
 
-RUNNING_ON_PI = "rpi" in os.uname()[2]
-if RUNNING_ON_PI:
+
+if check_running_on_pi():
     from gpiozero import CPUTemperature # type: ignore
 else:
     CPUTemperature = None
@@ -32,9 +34,6 @@ FAVICON_FILES = ['favicon-16.png', 'favicon-32.png', 'favicon-96.png', 'touch-ic
 PORT = int(os.environ.get('PORT', 8080))
 DEV_MODE = os.environ.get('DEV_MODE', 'false').lower() == 'true'
 TELEMETRY_TASK = 'telemetry_task'
-ROUTER_HOSTNAME = os.environ.get('ROUTER_HOSTNAME', 'router.grey')
-PING_TIMEOUT = 1 # In seconds
-PING_INTERVAL = 5 # In seconds
 
 class MessageType(StrEnum):
     SYSTEM = 'system'
@@ -103,22 +102,6 @@ async def websocket_handler(request: web.Request):
         request.app['websockets'].remove(ws)
     return ws
 
-async def restart_wifi():
-    if RUNNING_ON_PI:
-        logger.info('Restarting WiFi interface')
-        restart_command = 'sudo ip link set wlan0 down && sleep 5 && sudo ip link set wlan0 up'
-        await async_shell(restart_command)
-        await asyncio.sleep(10) # Wait for wifi to come back up
-    else:
-        logger.error('Restarting wifi not supported on this platform')
-
-async def ping_router(app: web.Application):
-    command = f'ping -c 1 -W{PING_TIMEOUT} {ROUTER_HOSTNAME}'
-    ping_result = await async_shell(command)
-    if ping_result != 0:
-        logger.warning(f'{ROUTER_HOSTNAME} ping failed. Return code: {ping_result}')
-        await restart_wifi()
-
 async def send_ws_message(app: web.Application, message_type: MessageType, data: dict[str, Any]):
     message = {
         'type': message_type,
@@ -150,17 +133,20 @@ async def send_telemetry(app: web.Application, telemetry: TelemetryRecord  | Non
         state.log_record_count += 1
         await send_ws_message(app, MessageType.TELEMETRY, data_dict)
 
+def telemetry_reader(app: web.Application) -> TelemetryRecord | None:
+    if DEV_MODE:
+        state: AppState = app['state']
+        last_record = state.last_telemetry_records[-1] if state.last_telemetry_records else None
+        return record_from_random(last_record)
+    else:
+        return record_from_serial(app['serial'])
 
 async def read_telemetry(app: web.Application):
-    telemetry = record_from_serial(app['serial'])
-    write_to_log(app['state'], telemetry)
-    await send_telemetry(app, telemetry)
-
-
-async def read_random_telemetry(app: web.Application):
-    state = app['state'] 
-    telemetry = record_from_random(state.last_telemetry)
-    state.last_telemetry = telemetry
+    telemetry = telemetry_reader(app)
+    state: AppState = app['state']
+    if telemetry is not None:
+        state.last_telemetry_records.append(telemetry)
+        state.last_telemetry_time = datetime.now()
     write_to_log(app['state'], telemetry)
     await send_telemetry(app, telemetry)
 
@@ -172,11 +158,9 @@ async def on_shutdown(app: web.Application):
 
 
 async def start_background_tasks(app: web.Application):
-    if DEV_MODE:
-        create_periodic_task(read_random_telemetry, app, name="Telemetry(Random)", interval=SERIAL_WAIT_TIME)
-    else:
+    if not DEV_MODE:
         create_periodic_task(ping_router, app, name="Router Ping", interval=PING_INTERVAL)
-        create_periodic_task(read_telemetry, app, name="Telemetry", interval=SERIAL_WAIT_TIME)
+    create_periodic_task(read_telemetry, app, name="Telemetry", interval=SERIAL_WAIT_TIME)
     create_periodic_task(read_system_params, app, name="System Params", interval=SYSTEM_PARAMS_INTERVAL)
 
 

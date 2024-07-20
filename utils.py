@@ -2,7 +2,10 @@ from dataclasses import dataclass, field
 from typing import TextIO
 from datetime import datetime
 from telemetry import TelemetryRecord
+from collections import deque
+from constants import TELEMETRY_BUFFER_SIZE
 import asyncio
+import os
 
 @dataclass
 class TaskData:
@@ -16,8 +19,11 @@ class AppState:
     log_start_time: datetime | None = None
     log_record_count: int = 0
     log_files: list[str] = field(default_factory=lambda: [])
-    last_telemetry: TelemetryRecord | None = None
     tasks: list[TaskData] = field(default_factory=lambda: [])
+    last_telemetry_time: datetime | None = None
+    last_telemetry_records: deque[TelemetryRecord] = field(
+        default_factory=lambda: deque(maxlen=TELEMETRY_BUFFER_SIZE)
+    )
 
 
 async def async_shell(command: str) -> int | None:
@@ -29,3 +35,5 @@ async def async_shell(command: str) -> int | None:
     await process.communicate()
     return process.returncode
 
+def check_running_on_pi():
+    return "rpi" in os.uname()[2]

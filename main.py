@@ -34,6 +34,7 @@ FAVICON_FILES = ['favicon-16.png', 'favicon-32.png', 'favicon-96.png', 'touch-ic
 PORT = int(os.environ.get('PORT', 8080))
 DEV_MODE = os.environ.get('DEV_MODE', 'false').lower() == 'true'
 TELEMETRY_TASK = 'telemetry_task'
+WS_TIMEOUT = 0.1 # in seconds
 
 class MessageType(StrEnum):
     SYSTEM = 'system'
@@ -91,15 +92,16 @@ def get_file_serve_handler(file_path: str):
     return file_serve_handler
 
 async def websocket_handler(request: web.Request):
-    ws = web.WebSocketResponse()
+    ws = web.WebSocketResponse(timeout=WS_TIMEOUT)
     await ws.prepare(request)
-    request.app['websockets'].append(ws)
+    state: AppState = request.app['state']
+    state.websockets.append(ws)
     try:
         async for msg in ws:
             logger.debug(f'Websocket message {msg}')
             await asyncio.sleep(1)
     finally:
-        request.app['websockets'].remove(ws)
+        state.websockets.remove(ws)
     return ws
 
 async def send_ws_message(app: web.Application, message_type: MessageType, data: dict[str, Any]):
@@ -108,38 +110,42 @@ async def send_ws_message(app: web.Application, message_type: MessageType, data:
         'data': data
     }
     message_str = json.dumps(message)
-    for ws in app['websockets']:
+    state: AppState = app['state']
+    for ws in state.websockets:
         await ws.send_str(message_str)
 
 
 async def read_system_params(app: web.Application):
-    data_dict: dict[str, float | None] = {}
-    state = app['state']
+    data_dict: dict[str, float | str | None] = {}
+    state: AppState = app['state']
     if CPUTemperature is not None:
         data_dict['cpu_temperature'] = CPUTemperature().temperature
     else:
         data_dict['cpu_temperature'] = None
     data_dict['memory_usage'] = psutil.virtual_memory().percent
     data_dict['cpu_usage'] = psutil.cpu_percent()
-    data_dict['log_file'] = state.log_file.name.split('/')[-1]
-    data_dict['log_duration'] = (datetime.now() - state.log_start_time).total_seconds()
+    if state.log_file is not None:
+        data_dict['log_file'] = state.log_file.name.split('/')[-1]
+    if state.log_start_time is not None:
+        data_dict['log_duration'] = (datetime.now() - state.log_start_time).total_seconds()
     await send_ws_message(app, MessageType.SYSTEM, data_dict)
 
 
 async def send_telemetry(app: web.Application, telemetry: TelemetryRecord  | None):
-    state = app['state']
+    state: AppState = app['state']
     if telemetry is not None:
         data_dict = telemetry.__dict__
         state.log_record_count += 1
         await send_ws_message(app, MessageType.TELEMETRY, data_dict)
 
 def telemetry_reader(app: web.Application) -> TelemetryRecord | None:
+    state: AppState = app['state']
     if DEV_MODE:
-        state: AppState = app['state']
         last_record = state.last_telemetry_records[-1] if state.last_telemetry_records else None
         return record_from_random(last_record)
     else:
-        return record_from_serial(app['serial'])
+        if state.serial is not None:
+            return record_from_serial(state.serial)
 
 async def read_telemetry(app: web.Application):
     telemetry = telemetry_reader(app)
@@ -152,9 +158,13 @@ async def read_telemetry(app: web.Application):
 
 
 async def on_shutdown(app: web.Application):
-    app['state'].log_file.close()
-    for ws in app['websockets']:
-        await ws.close(code=999, message='Server shutdown')
+    state: AppState = app['state']
+    if state.serial is not None:
+        state.serial.close()
+    if state.log_file is not None:
+        state.log_file.close()
+    for ws in state.websockets:
+        await ws.close(code=999, message=b'Server shutdown')
 
 
 async def start_background_tasks(app: web.Application):
@@ -183,11 +193,11 @@ def init():
     Path(TELEMETRY_LOG_DIRECTORY).mkdir(parents=True, exist_ok=True)
     Path(APP_LOG_DIRECTORY).mkdir(parents=True, exist_ok=True)
     app = web.Application()
-    app['websockets'] = []
-    app['state'] = AppState(log_files=get_all_log_files())
+    state = AppState(log_files=get_all_log_files())
+    app['state'] = state
     if not DEV_MODE:
-        app['serial'] = get_serial_interface()
-    reset_log(app['state'])
+        state.serial = get_serial_interface()
+    reset_log(state)
     app.add_routes([
         web.get('/',   http_handler),
         web.get('/ws', websocket_handler),

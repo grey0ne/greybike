@@ -4,8 +4,10 @@ from datetime import datetime
 from telemetry import TelemetryRecord
 from collections import deque
 from constants import TELEMETRY_BUFFER_SIZE
+from aiohttp import web
 import asyncio
 import os
+from serial import Serial
 
 @dataclass
 class TaskData:
@@ -20,6 +22,8 @@ class AppState:
     log_record_count: int = 0
     log_files: list[str] = field(default_factory=lambda: [])
     tasks: list[TaskData] = field(default_factory=lambda: [])
+    websockets: list[web.WebSocketResponse] = field(default_factory=lambda: [])
+    serial: Serial | None = None
     last_telemetry_time: datetime | None = None
     last_telemetry_records: deque[TelemetryRecord] = field(
         default_factory=lambda: deque(maxlen=TELEMETRY_BUFFER_SIZE)

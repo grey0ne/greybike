@@ -3,3 +3,4 @@ telemetry_logs
 app_logs
 .venv
 .env
+tmp.py

@@ -2,6 +2,7 @@ from dataclasses import dataclass
 import random
 import serial
 import os
+from datetime import datetime
 from serial.serialutil import SerialException
 from constants import SERIAL_TIMEOUT, SERIAL_BAUD_RATE
 
@@ -11,6 +12,7 @@ import logging
 
 @dataclass
 class TelemetryRecord:
+    timestamp: float
     amper_hours: float
     voltage: float
     current: float
@@ -31,6 +33,7 @@ class TelemetryRecord:
 def record_from_values(values: list[str]):
     flags = values[13].replace('\r\n', '')
     return TelemetryRecord(
+        timestamp=datetime.timestamp(datetime.now()),
         amper_hours=float(values[0]),
         voltage=float(values[1]),
         current=float(values[2]),
@@ -83,6 +86,7 @@ def get_random_value(from_: float, to_: float, step:float, previous: float | Non
 
 def record_from_random(previous: TelemetryRecord | None) -> TelemetryRecord:
     return TelemetryRecord(
+        timestamp=datetime.timestamp(datetime.now()),
         amper_hours=get_random_value(0, 10, 0.01, previous and previous.amper_hours),
         voltage=get_random_value(35, 55, 0.1, previous and previous.voltage),
         current=get_random_value(0, 25, 1, previous and previous.current),

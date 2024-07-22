@@ -49,7 +49,7 @@ def write_to_log(state: AppState, telemetry: TelemetryRecord | None):
         if state.log_record_count >= LOG_RECORD_COUNT_LIMIT:
             reset_log(state)
         data = telemetry.__dict__
-        data['timestamp'] = "%.2f" % datetime.timestamp(datetime.now())
+        data['timestamp'] = "%.2f" % telemetry.timestamp
         log_record = ','.join(str(data[field]) for field in get_log_fields())
         if state.log_file is None:
             raise ValueError('Log file not open')

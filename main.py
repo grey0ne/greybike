@@ -34,6 +34,7 @@ FAVICON_FILES = ['favicon-16.png', 'favicon-32.png', 'favicon-96.png', 'touch-ic
 PORT = int(os.environ.get('PORT', 8080))
 DEV_MODE = os.environ.get('DEV_MODE', 'false').lower() == 'true'
 TELEMETRY_TASK = 'telemetry_task'
+WEBSOCKET_TELEMETRY_INTERVAL = 0.1
 WS_TIMEOUT = 0.1 # in seconds
 
 class MessageType(StrEnum):
@@ -131,12 +132,14 @@ async def read_system_params(app: web.Application):
     await send_ws_message(app, MessageType.SYSTEM, data_dict)
 
 
-async def send_telemetry(app: web.Application, telemetry: TelemetryRecord  | None):
+async def send_telemetry(app: web.Application):
     state: AppState = app['state']
-    if telemetry is not None:
+    telemetry = state.last_telemetry_records[-1] if state.last_telemetry_records else None
+    if telemetry is not None and float(telemetry.timestamp) > datetime.now().timestamp() - 1:
         data_dict = telemetry.__dict__
         state.log_record_count += 1
         await send_ws_message(app, MessageType.TELEMETRY, data_dict)
+
 
 def telemetry_reader(app: web.Application) -> TelemetryRecord | None:
     state: AppState = app['state']
@@ -154,7 +157,6 @@ async def read_telemetry(app: web.Application):
         state.last_telemetry_records.append(telemetry)
         state.last_telemetry_time = datetime.now()
     write_to_log(app['state'], telemetry)
-    await send_telemetry(app, telemetry)
 
 
 async def on_shutdown(app: web.Application):
@@ -171,6 +173,7 @@ async def start_background_tasks(app: web.Application):
     if not DEV_MODE:
         create_periodic_task(ping_router, app, name="Router Ping", interval=PING_INTERVAL)
     create_periodic_task(read_telemetry, app, name="Telemetry", interval=SERIAL_WAIT_TIME)
+    create_periodic_task(send_telemetry, app, name="Send Telemetry", interval=WEBSOCKET_TELEMETRY_INTERVAL)
     create_periodic_task(read_system_params, app, name="System Params", interval=SYSTEM_PARAMS_INTERVAL)
 
 

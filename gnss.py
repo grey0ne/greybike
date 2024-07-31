@@ -47,13 +47,11 @@ def gnss_from_serial(ser: serial.Serial) -> GNSSRecord | None:
             lon = result.lon
             lat = result.lat
         elif result.msgID in [GSA, GSV]:
-            print(f'Satellite Data {result.msgID}')
             return None
         elif result.msgID == VTG:
-            print(f'Message {result.msgID}')
             return None
         else:
-            print(result)
+            logger.error(f'Unknown message {result.msgID}')
         record = GNSSRecord(
             timestamp=datetime.timestamp(datetime.now()),
             longitude=lon,
@@ -68,7 +66,7 @@ def gnss_from_serial(ser: serial.Serial) -> GNSSRecord | None:
     except NMEAParseError as e:
         logger.error('NMEA Parse error: {}'.format(e))
 
-for x in range(200):
+for x in range(2000):
     res = gnss_from_serial(GNSS_SERIAL)
     if res is not None:
         print(res)

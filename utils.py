@@ -34,9 +34,8 @@ class GNSSRecord:
     timestamp: float
     latitude: float
     longitude: float
-    altitude: float
-    speed: float
-    satellites: int
+    altitude: float | None = None
+    speed: float | None = None
 
 
 @dataclass

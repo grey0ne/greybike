@@ -6,7 +6,7 @@ from datetime import datetime
 from serial.serialutil import SerialException
 from constants import SERIAL_TIMEOUT, SERIAL_BAUD_RATE
 
-INTERFACE = os.environ.get('SERIAL')
+CA_INTERFACE = os.environ.get('CA_SERIAL')
 
 import logging
 
@@ -109,8 +109,8 @@ def record_from_random(previous: TelemetryRecord | None) -> TelemetryRecord:
 def get_serial_interface() -> serial.Serial | None:
     logger = logging.getLogger('greybike')
     try:
-        ser = serial.Serial(INTERFACE, SERIAL_BAUD_RATE, timeout=SERIAL_TIMEOUT)
-        logger.info(f'Using serial interface {INTERFACE}')
+        ser = serial.Serial(CA_INTERFACE, SERIAL_BAUD_RATE, timeout=SERIAL_TIMEOUT)
+        logger.info(f'Using serial interface {CA_INTERFACE}')
         return ser
     except SerialException:
-        logger.error(f'Could not open serial interface {INTERFACE}')
+        logger.error(f'Could not open serial interface {CA_INTERFACE}')

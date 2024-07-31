@@ -1,5 +1,6 @@
 import serial
 from pynmeagps import NMEAReader
+from pynmeagps.exceptions import NMEAParseError
 import os
 import logging
 
@@ -28,8 +29,10 @@ def gnss_from_serial(ser: serial.Serial) -> GNSSRecord | None:
         if result.msgID == GLL:
             print(result.lat, result.lon)
     except serial.SerialException as e:
-        logger.error('Device error: {}'.format(e))
+        logger.error('GNSS Serial error: {}'.format(e))
         return None
+    except NMEAParseError as e:
+        logger.error('NMEA Parse error: {}'.format(e))
 
 for x in range(100):
     gnss_from_serial(GNSS_SERIAL)

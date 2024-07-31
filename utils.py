@@ -1,13 +1,43 @@
 from dataclasses import dataclass, field
 from typing import TextIO
 from datetime import datetime
-from telemetry import TelemetryRecord
 from collections import deque
 from constants import TELEMETRY_BUFFER_SIZE
 from aiohttp import web
 import asyncio
 import os
 from serial import Serial
+
+@dataclass
+class TelemetryRecord:
+    timestamp: float
+    amper_hours: float
+    voltage: float
+    current: float
+    speed: float
+    trip_distance: float
+    motor_temp: float
+    pedal_rpm: float
+    human_watts: float
+    human_torque: float
+    throttle_input: float
+    throttle_output: float
+    aux_a: float
+    aux_d: float
+    mode: int
+    flags: str
+    is_brake_pressed: bool
+
+
+@dataclass
+class GNSSRecord:
+    timestamp: float
+    latitude: float
+    longitude: float
+    altitude: float
+    speed: float
+    satellites: int
+
 
 @dataclass
 class TaskData:

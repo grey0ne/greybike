@@ -1,34 +1,15 @@
-from dataclasses import dataclass
 import random
 import serial
 import os
 from datetime import datetime
 from serial.serialutil import SerialException
+from utils import TelemetryRecord
 from constants import SERIAL_TIMEOUT, SERIAL_BAUD_RATE
 
 CA_INTERFACE = os.environ.get('CA_SERIAL')
 
 import logging
 
-@dataclass
-class TelemetryRecord:
-    timestamp: float
-    amper_hours: float
-    voltage: float
-    current: float
-    speed: float
-    trip_distance: float
-    motor_temp: float
-    pedal_rpm: float
-    human_watts: float
-    human_torque: float
-    throttle_input: float
-    throttle_output: float
-    aux_a: float
-    aux_d: float
-    mode: int
-    flags: str
-    is_brake_pressed: bool
 
 def record_from_values(values: list[str]):
     flags = values[13].replace('\r\n', '')
@@ -51,7 +32,6 @@ def record_from_values(values: list[str]):
         mode=int(flags[0]),
         is_brake_pressed='B' in flags
     )
-
 
 
 def record_from_serial(ser: serial.Serial) -> TelemetryRecord | None:

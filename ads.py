@@ -9,6 +9,12 @@ ads = ADS.ADS1115(i2c)
 ads.gain = 1
 chan = AnalogIn(ads, ADS.P0)
 
-for x in range(100):
-    print(f"MQ-135 Voltage: {chan.voltage}V")
-    time.sleep(1)
+BASE_VOLTAGE = 2.52
+AMP_CONVERSION_CF = 10
+BATTERY_VOLTAGE = 52.6
+
+
+while True:
+    amps = (BASE_VOLTAGE - chan.voltage) * AMP_CONVERSION_CF
+    print(f"Voltage: {chan.voltage} Amps: {amps} Watts: {amps * BATTERY_VOLTAGE}")
+    time.sleep(0.5)

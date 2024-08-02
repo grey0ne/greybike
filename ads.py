@@ -6,8 +6,8 @@ from adafruit_ads1x15.analog_in import AnalogIn
 from utils import ElectricalRecord, get_random_value
 
 
-BASE_VOLTAGE = 2.5155 # ACS712 20A sensor has 2.5V output when no current is flowing
-AMP_CONVERSION_CF = 9.93 # ACS712 20A coefficient should be exactly 10 (100mV/A) but after calibration this value works better
+BASE_VOLTAGE = 2.513 # ACS712 20A sensor has 2.5V output when no current is flowing
+AMP_CONVERSION_CF = 9.91 # ACS712 20A coefficient should be exactly 10 (100mV/A) but after calibration this value works better
 
 VOLTAGE_DIVIDER_CF = 21.7 # 200kOhm / 10kOhm voltage divider. And some further calubration
 
@@ -37,5 +37,4 @@ def electric_record_from_random(previous: ElectricalRecord | None) -> Electrical
 def get_ads_interface() -> ADS.ADS1115 | None:
     i2c = busio.I2C(board.SCL, board.SDA) # type: ignore
     ads = ADS.ADS1115(i2c)
-    ads.gain = 1
     return ads

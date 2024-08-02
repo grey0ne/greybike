@@ -1,19 +1,27 @@
-import random
 import serial
 import os
+import logging
 from datetime import datetime
 from serial.serialutil import SerialException
-from utils import TelemetryRecord
+from utils import CATelemetryRecord, get_random_value
 from constants import SERIAL_TIMEOUT, SERIAL_BAUD_RATE
 
 CA_INTERFACE = os.environ.get('CA_SERIAL')
+CA_LINE_VALUES_COUNT = 14
 
-import logging
 
-
-def record_from_values(values: list[str]):
-    flags = values[13].replace('\r\n', '')
-    return TelemetryRecord(
+def parse_telemetry_line(line: bytes) -> CATelemetryRecord | None:
+    logger = logging.getLogger('greybike')
+    try:
+        values = line.decode("utf-8").replace('\r\n', '').split('\t')
+    except Exception as e:
+        logger.error(f'Error decoding serial line: {e}')
+        return None
+    if len(values) != CA_LINE_VALUES_COUNT:
+        logger.error(f'Incorrect number of values in serial line: {len(values)} expected {CA_LINE_VALUES_COUNT}')
+        return None
+    flags = values[13]
+    return CATelemetryRecord(
         timestamp=datetime.timestamp(datetime.now()),
         amper_hours=float(values[0]),
         voltage=float(values[1]),
@@ -34,38 +42,13 @@ def record_from_values(values: list[str]):
     )
 
 
-def record_from_serial(ser: serial.Serial) -> TelemetryRecord | None:
-    logger = logging.getLogger('greybike')
+def ca_record_from_serial(ser: serial.Serial) -> CATelemetryRecord | None:
     line = ser.readline()
-    try:
-        values = line.decode("utf-8").split("\t")
-    except Exception as e:
-        logger.error(f'Error decoding serial line: {e}')
-        return None
-    if len(values) < 14:
-        return None
-    try:
-        return record_from_values(values)
-    except ValueError:
-        return None
+    return parse_telemetry_line(line)
 
 
-def get_random_value(from_: float, to_: float, step:float, previous: float | None) -> float:
-    if previous is not None:
-        if random.uniform(0, 10) < 1:
-            result = previous + random.uniform(-step, step)
-            if result < from_:
-                result = from_
-            elif result > to_:
-                result = to_
-        else:
-            result = previous
-    else:
-        result = random.uniform(from_, to_)
-    return round(result, 2)
-
-def record_from_random(previous: TelemetryRecord | None) -> TelemetryRecord:
-    return TelemetryRecord(
+def ca_record_from_random(previous: CATelemetryRecord | None) -> CATelemetryRecord:
+    return CATelemetryRecord(
         timestamp=datetime.timestamp(datetime.now()),
         amper_hours=get_random_value(0, 10, 0.01, previous and previous.amper_hours),
         voltage=get_random_value(35, 55, 0.1, previous and previous.voltage),
@@ -83,10 +66,9 @@ def record_from_random(previous: TelemetryRecord | None) -> TelemetryRecord:
         flags='',
         mode=1,
         is_brake_pressed=False
- 
     )
 
-def get_serial_interface() -> serial.Serial | None:
+def get_ca_serial_interface() -> serial.Serial | None:
     logger = logging.getLogger('greybike')
     try:
         ser = serial.Serial(CA_INTERFACE, SERIAL_BAUD_RATE, timeout=SERIAL_TIMEOUT)

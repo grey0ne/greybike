@@ -6,10 +6,14 @@ from constants import TELEMETRY_BUFFER_SIZE
 from aiohttp import web
 import asyncio
 import os
+import random
 from serial import Serial
 
 @dataclass
-class TelemetryRecord:
+class CATelemetryRecord:
+    """
+        Telemetry record from Cycle Analyst V3 serial output
+    """
     timestamp: float
     amper_hours: float
     voltage: float
@@ -31,11 +35,20 @@ class TelemetryRecord:
 
 @dataclass
 class GNSSRecord:
+    """
+        GNSS record from bike onboard receiver. Currently using Holybro Micro m10
+    """
     timestamp: float
     latitude: float
     longitude: float
     altitude: float | None = None
     speed: float | None = None
+
+@dataclass
+class ElectricalRecord:
+    timestamp: float
+    current: float
+    voltage: float
 
 
 @dataclass
@@ -54,9 +67,27 @@ class AppState:
     websockets: list[web.WebSocketResponse] = field(default_factory=lambda: [])
     serial: Serial | None = None
     last_telemetry_time: datetime | None = None
-    last_telemetry_records: deque[TelemetryRecord] = field(
+    last_telemetry_records: deque[CATelemetryRecord] = field(
         default_factory=lambda: deque(maxlen=TELEMETRY_BUFFER_SIZE)
     )
+
+
+def get_random_value(from_: float, to_: float, step:float, previous: float | None) -> float:
+    """
+        Generate random values for development purposes
+    """
+    if previous is not None:
+        if random.uniform(0, 10) < 1:
+            result = previous + random.uniform(-step, step)
+            if result < from_:
+                result = from_
+            elif result > to_:
+                result = to_
+        else:
+            result = previous
+    else:
+        result = random.uniform(from_, to_)
+    return round(result, 2)
 
 
 async def async_shell(command: str) -> int | None:

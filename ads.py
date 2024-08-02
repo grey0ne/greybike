@@ -17,7 +17,7 @@ def electric_record_from_ads(ads: ADS.ADS1115) -> ElectricalRecord:
     voltage_channel = AnalogIn(ads, ADS.P1) # Voltage divider connected to A1. Measures battery voltage
     amps = (BASE_VOLTAGE - current_channel.voltage) * AMP_CONVERSION_CF
     battery_voltage = voltage_channel.voltage * VOLTAGE_DIVIDER_CF
-    print(f"Voltage: {battery_voltage} Amps: {amps} Watts: {amps * battery_voltage}")
+    print(f"A1 Value: {voltage_channel.voltage} Voltage: {battery_voltage} Amps: {amps} Watts: {amps * battery_voltage}")
     return ElectricalRecord(
         timestamp=datetime.timestamp(datetime.now()),
         current=amps,

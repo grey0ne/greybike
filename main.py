@@ -11,13 +11,14 @@ import asyncio
 
 from aiohttp import web
 
-from telemetry import TelemetryRecord, record_from_serial, record_from_random, get_serial_interface
+from telemetry import record_from_serial, record_from_random, get_serial_interface
+from ads import electric_record_from_ads, get_ads_interface
 from constants import (
     TELEMETRY_LOG_DIRECTORY, SERIAL_WAIT_TIME, FAVICON_DIRECTORY,
     SYSTEM_PARAMS_INTERVAL, MANIFEST, APP_LOG_FILE, APP_LOG_DIRECTORY,
     PING_INTERVAL
 )
-from utils import AppState, check_running_on_pi
+from utils import AppState, check_running_on_pi, CATelemetryRecord
 from tasks import create_periodic_task
 from telemetry_logs import write_to_log, reset_log
 from dash_page import DASH_PAGE_HTML
@@ -200,6 +201,7 @@ def init():
     app['state'] = state
     if not DEV_MODE:
         state.serial = get_serial_interface()
+        state.ads = get_ads_interface()
     reset_log(state)
     app.add_routes([
         web.get('/',   http_handler),

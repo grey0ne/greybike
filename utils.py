@@ -4,6 +4,7 @@ from datetime import datetime
 from collections import deque
 from constants import TELEMETRY_BUFFER_SIZE
 from aiohttp import web
+import adafruit_ads1x15.ads1115 as ADS
 import asyncio
 import os
 import random
@@ -66,6 +67,7 @@ class AppState:
     tasks: list[TaskData] = field(default_factory=lambda: [])
     websockets: list[web.WebSocketResponse] = field(default_factory=lambda: [])
     serial: Serial | None = None
+    ads: ADS.ADS1115 | None = None
     last_telemetry_time: datetime | None = None
     last_telemetry_records: deque[CATelemetryRecord] = field(
         default_factory=lambda: deque(maxlen=TELEMETRY_BUFFER_SIZE)

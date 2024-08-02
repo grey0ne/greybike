@@ -1,7 +1,6 @@
 from constants import LOG_VERSION, TELEMETRY_LOG_DIRECTORY, LOG_RECORD_COUNT_LIMIT
 from datetime import datetime
-from utils import AppState
-from telemetry import TelemetryRecord
+from utils import AppState, CATelemetryRecord
 from dataclasses import dataclass, fields
 from typing import Generator
 import os
@@ -44,7 +43,7 @@ def get_log_fields():
     return [field.name for field in fields(LogRecord)]
 
 
-def write_to_log(state: AppState, telemetry: TelemetryRecord | None):
+def write_to_log(state: AppState, telemetry: CATelemetryRecord | None):
     if telemetry is not None:
         if state.log_record_count >= LOG_RECORD_COUNT_LIMIT:
             reset_log(state)

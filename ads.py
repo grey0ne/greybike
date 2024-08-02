@@ -9,7 +9,7 @@ from utils import ElectricalRecord, get_random_value
 BASE_VOLTAGE = 2.515 # ACS712 20A sensor has 2.5V output when no current is flowing
 AMP_CONVERSION_CF = 9.93 # ACS712 20A coefficient should be exactly 10 (100mV/A) but after calibration this value works better
 
-VOLTAGE_DIVIDER_CF = 11 # 100kOhm / 10kOhm voltage divider
+VOLTAGE_DIVIDER_CF = 21 # 200kOhm / 10kOhm voltage divider
 
 
 def electric_record_from_ads(ads: ADS.ADS1115) -> ElectricalRecord:

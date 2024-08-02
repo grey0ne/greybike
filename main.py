@@ -11,7 +11,7 @@ import asyncio
 
 from aiohttp import web
 
-from telemetry import record_from_serial, record_from_random, get_serial_interface
+from telemetry import ca_record_from_serial, ca_record_from_random, get_ca_serial_interface
 from ads import electric_record_from_ads, get_ads_interface
 from constants import (
     TELEMETRY_LOG_DIRECTORY, SERIAL_WAIT_TIME, FAVICON_DIRECTORY,
@@ -142,23 +142,27 @@ async def send_telemetry(app: web.Application):
         await send_ws_message(app, MessageType.TELEMETRY, data_dict)
 
 
-def telemetry_reader(app: web.Application) -> TelemetryRecord | None:
+def read_ca_telemetry_record(app: web.Application) -> CATelemetryRecord | None:
     state: AppState = app['state']
     if DEV_MODE:
         last_record = state.last_telemetry_records[-1] if state.last_telemetry_records else None
-        return record_from_random(last_record)
+        return ca_record_from_random(last_record)
     else:
         if state.serial is not None:
-            return record_from_serial(state.serial)
+            return ca_record_from_serial(state.serial)
 
-async def read_telemetry(app: web.Application):
-    telemetry = telemetry_reader(app)
+async def ca_telemetry_task(app: web.Application):
+    telemetry = read_ca_telemetry_record(app)
     state: AppState = app['state']
     if telemetry is not None:
         state.last_telemetry_records.append(telemetry)
         state.last_telemetry_time = datetime.now()
     write_to_log(app['state'], telemetry)
 
+async def ads_task(app: web.Application):
+    state: AppState = app['state']
+    if state.ads is not None:
+        electric_record_from_ads(state.ads)
 
 async def on_shutdown(app: web.Application):
     state: AppState = app['state']
@@ -173,7 +177,7 @@ async def on_shutdown(app: web.Application):
 async def start_background_tasks(app: web.Application):
     if not DEV_MODE:
         create_periodic_task(ping_router, app, name="Router Ping", interval=PING_INTERVAL)
-    create_periodic_task(read_telemetry, app, name="Telemetry", interval=SERIAL_WAIT_TIME)
+    create_periodic_task(ca_telemetry_task, app, name="Cycle Analyst Telemetry", interval=SERIAL_WAIT_TIME)
     create_periodic_task(send_telemetry, app, name="Send Telemetry", interval=WEBSOCKET_TELEMETRY_INTERVAL)
     create_periodic_task(read_system_params, app, name="System Params", interval=SYSTEM_PARAMS_INTERVAL)
 
@@ -200,7 +204,7 @@ def init():
     state = AppState(log_files=get_all_log_files())
     app['state'] = state
     if not DEV_MODE:
-        state.serial = get_serial_interface()
+        state.serial = get_ca_serial_interface()
         state.ads = get_ads_interface()
     reset_log(state)
     app.add_routes([

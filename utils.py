@@ -10,12 +10,16 @@ import os
 import random
 from serial import Serial
 
+
+def get_current_timestamp() -> float:
+    return datetime.timestamp(datetime.now())
+
+
 @dataclass
 class CATelemetryRecord:
     """
         Telemetry record from Cycle Analyst V3 serial output
     """
-    timestamp: float
     amper_hours: float
     voltage: float
     current: float
@@ -32,18 +36,30 @@ class CATelemetryRecord:
     mode: int
     flags: str
     is_brake_pressed: bool
+    timestamp: float = field(default_factory=get_current_timestamp)
 
 
 @dataclass
 class GNSSRecord:
     """
         GNSS record from bike onboard receiver. Currently using Holybro Micro m10
+
+        Attributes:
+            timestamp (float): Unix timestamp.
+            latitude (float): Latitude in minutes.
+            longitude (float): Longitude in minutes.
+            altitude (float): Altitude above sea level in meters.
+            hdop (float): Horizontal Dilution of Precision. Lower is better accuracy.
+            sat_num (int): Number of satellites used in fix.
     """
-    timestamp: float
     latitude: float
     longitude: float
+    timestamp: float = field(default_factory=get_current_timestamp)
     altitude: float | None = None
     speed: float | None = None
+    hdop: float | None = None
+    sat_num: int | None = None
+
 
 @dataclass
 class ElectricalRecord:
@@ -54,9 +70,13 @@ class ElectricalRecord:
 
 @dataclass
 class TaskData:
+    """
+        Stores periodic task metadata
+    """
     name: str
     task: asyncio.Task[None]
     interval: float
+
 
 @dataclass
 class AppState:

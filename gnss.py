@@ -1,7 +1,4 @@
 import serial
-from pynmeagps import NMEAReader
-from pynmeagps.exceptions import NMEAParseError
-from datetime import datetime
 import os
 import logging
 
@@ -17,54 +14,58 @@ GNSS_SERIAL = serial.Serial(
     timeout=1
 )
 
-GLL = 'GLL' # Geographic Position - Latitude/Longitude
+KNOTS_TO_KMH = 1.852
+
+GLL = 'GPGLL' # Geographic Position - Latitude/Longitude
 GSV = 'GSV' # GNSS Satellites in View
 GSA = 'GSA' # GNSS DOP and Active Satellites
-GGA = 'GGA' # Global positioning system fix data
-RMC = 'RMC' # Recommended Minimum data
+GGA = 'GPGGA' # Global positioning system fix data
+RMC = 'GPRMC' # Recommended Minimum data
 VTG = 'VTG' # Course over ground and Groundspeed
+
+def parse_GGA(values: list[str]) -> GNSSRecord:
+    return GNSSRecord(
+        latitude=float(values[2]),
+        longitude=float(values[4]),
+        sat_num=int(values[7]),
+        hdop=float(values[8]),
+        altitude=float(values[9])
+    )
+
+def parse_RMC(values: list[str]) -> GNSSRecord:
+    return GNSSRecord(
+        latitude=float(values[3]),
+        longitude=float(values[5]),
+        speed=float(values[7]) * KNOTS_TO_KMH
+    )
+
+def parse_GLL(values: list[str]) -> GNSSRecord:
+    return GNSSRecord(
+        latitude=float(values[1]),
+        longitude=float(values[3]),
+    )
+
+def process_nmea_line(line: bytes) -> GNSSRecord | None:
+    logger = logging.getLogger('greybike')
+    nmea_values = line.decode("utf-8").replace('\r\n', '').split(',')
+    msgID = nmea_values[0].replace('$', '') 
+    if msgID == GGA:
+        return parse_GGA(nmea_values)
+    if msgID == RMC:
+        return parse_RMC(nmea_values)
+    if msgID == GLL:
+        return parse_GLL(nmea_values)
+    logger.error(f'Unknown message {msgID}')
+    return None
 
 def gnss_from_serial(ser: serial.Serial) -> GNSSRecord | None:
     logger = logging.getLogger('greybike')
     try:
         line = ser.readline()
-        result = NMEAReader.parse(line)
-        lon = None
-        lat = None
-        alt = None
-        spd = None
-        if result is None:
-            return
-        if result.msgID == GGA:
-            lon = result.lon
-            lat = result.lat
-            alt = result.alt
-        elif result.msgID == RMC:
-            lon = result.lon
-            lat = result.lat
-            spd = result.spd
-        elif result.msgID == GLL:
-            lon = result.lon
-            lat = result.lat
-        elif result.msgID in [GSA, GSV]:
-            return None
-        elif result.msgID == VTG:
-            return None
-        else:
-            logger.error(f'Unknown message {result.msgID}')
-        record = GNSSRecord(
-            timestamp=datetime.timestamp(datetime.now()),
-            longitude=lon,
-            latitude=lat,
-            altitude=alt,
-            speed=spd
-        )
-        return record
+        return process_nmea_line(line)
     except serial.SerialException as e:
         logger.error('GNSS Serial error: {}'.format(e))
         return None
-    except NMEAParseError as e:
-        logger.error('NMEA Parse error: {}'.format(e))
 
 for x in range(2000):
     res = gnss_from_serial(GNSS_SERIAL)

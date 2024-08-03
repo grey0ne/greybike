@@ -2,5 +2,4 @@ pyserial==3.5
 aiohttp==3.9.5
 gpiozero==2.0.1
 psutil==6.0.0
-pynmeagps==1.0.38
 adafruit-circuitpython-ads1x15==2.2.26

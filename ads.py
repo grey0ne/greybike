@@ -6,14 +6,14 @@ from adafruit_ads1x15.analog_in import AnalogIn
 from utils import ElectricalRecord, get_random_value
 
 
-BASE_VOLTAGE = 2.513 # ACS712 20A sensor has 2.5V output when no current is flowing
-AMP_CONVERSION_CF = 9.91 # ACS712 20A coefficient should be exactly 10 (100mV/A) but after calibration this value works better
+BASE_VOLTAGE = 2.4254 # ACS712 20A sensor has 2.5V output when no current is flowing
+AMP_CONVERSION_CF = -1.85 # ACS712 20A coefficient should (185mv/A)
 
 VOLTAGE_DIVIDER_CF = 21.7 # 200kOhm / 10kOhm voltage divider. And some further calubration
 
 
 def rd(value: float):
-    return round(value, 2)
+    return round(value, 4)
 
 def electric_record_from_ads(ads: ADS.ADS1115) -> ElectricalRecord:
     current_channel = AnalogIn(ads, ADS.P0) # ACS712 20A sensor connected to A0. Measures current flowing to the bike's electronics

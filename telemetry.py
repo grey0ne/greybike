@@ -49,7 +49,6 @@ def ca_record_from_serial(ser: serial.Serial) -> CATelemetryRecord | None:
 
 def ca_record_from_random(previous: CATelemetryRecord | None) -> CATelemetryRecord:
     return CATelemetryRecord(
-        timestamp=datetime.timestamp(datetime.now()),
         amper_hours=get_random_value(0, 10, 0.01, previous and previous.amper_hours),
         voltage=get_random_value(35, 55, 0.1, previous and previous.voltage),
         current=get_random_value(0, 25, 1, previous and previous.current),

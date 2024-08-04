@@ -2,7 +2,7 @@ import serial
 import os
 import logging
 
-from utils import GNSSRecord
+from utils import GNSSRecord, get_random_value
 
 GNSS_SERIAL_INTERFACE = os.environ.get('GNSS_SERIAL', '/dev/ttyS0')
 GNSS_BAUD_RATE = 115200
@@ -24,7 +24,8 @@ RMC = ['GNRMC','GPRMC'] # Recommended Minimum data
 VTG = ['GNVTG'] # Course over ground and Groundspeed
 
 
-def parse_GGA(values: list[str]) -> GNSSRecord:
+def parse_GGA(values: list[str]) -> GNSSRecord | None:
+    logger = logging.getLogger('greybike')
     try:
         return GNSSRecord(
             latitude=float(values[2]),
@@ -34,26 +35,24 @@ def parse_GGA(values: list[str]) -> GNSSRecord:
             altitude=float(values[9])
         )
     except ValueError:
-        print(values)
+        logger.error(f'Error parsing GGA: {values}')
 
 def parse_RMC(values: list[str]) -> GNSSRecord:
-    try:
-        return GNSSRecord(
-            latitude=float(values[3]),
-            longitude=float(values[5]),
-            speed=float(values[7]) * KNOTS_TO_KMH
-        )
-    except ValueError:
-        print(values)
+    return GNSSRecord(
+        latitude=float(values[3]),
+        longitude=float(values[5]),
+        speed=float(values[7]) * KNOTS_TO_KMH
+    )
 
-def parse_GLL(values: list[str]) -> GNSSRecord:
+def parse_GLL(values: list[str]) -> GNSSRecord | None:
+    logger = logging.getLogger('greybike')
     try:
         return GNSSRecord(
             latitude=float(values[1]),
             longitude=float(values[3]),
         )
     except ValueError:
-        print(values)
+        logger.error(f'Error parsing GGA: {values}')
 
 def process_nmea_line(line: bytes) -> GNSSRecord | None:
     logger = logging.getLogger('greybike')
@@ -78,6 +77,17 @@ def gnss_from_serial(ser: serial.Serial) -> GNSSRecord | None:
     except serial.SerialException as e:
         logger.error('GNSS Serial error: {}'.format(e))
         return None
+
+
+def gnss_from_random(previous: GNSSRecord | None ) -> GNSSRecord | None:
+    return GNSSRecord(
+        latitude=get_random_value(99, 100, 0.001, previous and previous.latitude),
+        longitude=get_random_value(99, 100, 0.001, previous and previous.longitude),
+        speed=get_random_value(10, 40, 0.5, previous and previous.speed),
+        altitude=get_random_value(800, 1000, 1, previous and previous.altitude),
+        sat_num=int(get_random_value(0, 20, 1, previous and previous.sat_num)),
+    )
+
 
 for x in range(2000):
     res = gnss_from_serial(GNSS_SERIAL)

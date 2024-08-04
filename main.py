@@ -14,7 +14,7 @@ from aiohttp import web
 from telemetry import ca_record_from_serial, ca_record_from_random, get_ca_serial_interface
 from ads import electric_record_from_ads, get_ads_interface
 from constants import (
-    TELEMETRY_LOG_DIRECTORY, SERIAL_WAIT_TIME, FAVICON_DIRECTORY,
+    TELEMETRY_LOG_DIRECTORY, CA_TELEMETRY_INTERVAL, GNSS_INTERVAL, FAVICON_DIRECTORY,
     SYSTEM_PARAMS_INTERVAL, MANIFEST, APP_LOG_FILE, APP_LOG_DIRECTORY,
     PING_INTERVAL
 )
@@ -24,6 +24,7 @@ from telemetry_logs import write_to_log, reset_log
 from dash_page import DASH_PAGE_HTML
 from logs_page import render_logs_page
 from wifi import ping_router
+from gnss import gnss_from_serial, gnss_from_random
 
 
 if check_running_on_pi():
@@ -135,7 +136,7 @@ async def read_system_params(app: web.Application):
 
 async def send_telemetry(app: web.Application):
     state: AppState = app['state']
-    telemetry = state.last_telemetry_records[-1] if state.last_telemetry_records else None
+    telemetry = state.ca_telemetry_records[-1] if state.ca_telemetry_records else None
     if telemetry is not None and float(telemetry.timestamp) > datetime.now().timestamp() - 1:
         data_dict = telemetry.__dict__
         state.log_record_count += 1
@@ -145,19 +146,30 @@ async def send_telemetry(app: web.Application):
 def read_ca_telemetry_record(app: web.Application) -> CATelemetryRecord | None:
     state: AppState = app['state']
     if DEV_MODE:
-        last_record = state.last_telemetry_records[-1] if state.last_telemetry_records else None
+        last_record = state.ca_telemetry_records[-1] if state.ca_telemetry_records else None
         return ca_record_from_random(last_record)
     else:
-        if state.serial is not None:
-            return ca_record_from_serial(state.serial)
+        if state.ca_serial is not None:
+            return ca_record_from_serial(state.ca_serial)
+
 
 async def ca_telemetry_task(app: web.Application):
     telemetry = read_ca_telemetry_record(app)
     state: AppState = app['state']
     if telemetry is not None:
-        state.last_telemetry_records.append(telemetry)
+        state.ca_telemetry_records.append(telemetry)
         state.last_telemetry_time = datetime.now()
-    write_to_log(app['state'], telemetry)
+    write_to_log(state, telemetry)
+
+
+async def gnss_task(app: web.Application):
+    state: AppState = app['state']
+    if DEV_MODE:
+        gnss_record = gnss_from_random(state.gnss_records[-1] if state.gnss_records else None)
+    if state.gnss_serial is not None:
+        gnss_record = gnss_from_serial(state.gnss_serial)
+        if gnss_record is not None:
+            await send_ws_message(app, MessageType.TELEMETRY, gnss_record.__dict__)
 
 async def ads_task(app: web.Application):
     state: AppState = app['state']
@@ -166,8 +178,10 @@ async def ads_task(app: web.Application):
 
 async def on_shutdown(app: web.Application):
     state: AppState = app['state']
-    if state.serial is not None:
-        state.serial.close()
+    if state.ca_serial is not None:
+        state.ca_serial.close()
+    if state.gnss_serial is not None:
+        state.gnss_serial.close()
     if state.log_file is not None:
         state.log_file.close()
     for ws in state.websockets:
@@ -177,7 +191,8 @@ async def on_shutdown(app: web.Application):
 async def start_background_tasks(app: web.Application):
     if not DEV_MODE:
         create_periodic_task(ping_router, app, name="Router Ping", interval=PING_INTERVAL)
-    create_periodic_task(ca_telemetry_task, app, name="Cycle Analyst Telemetry", interval=SERIAL_WAIT_TIME)
+    create_periodic_task(ca_telemetry_task, app, name="Cycle Analyst Telemetry", interval=CA_TELEMETRY_INTERVAL)
+    create_periodic_task(gnss_task, app, name="GNSS", interval=GNSS_INTERVAL)
     create_periodic_task(send_telemetry, app, name="Send Telemetry", interval=WEBSOCKET_TELEMETRY_INTERVAL)
     create_periodic_task(read_system_params, app, name="System Params", interval=SYSTEM_PARAMS_INTERVAL)
 
@@ -204,7 +219,7 @@ def init():
     state = AppState(log_files=get_all_log_files())
     app['state'] = state
     if not DEV_MODE:
-        state.serial = get_ca_serial_interface()
+        state.ca_serial = get_ca_serial_interface()
         state.ads = get_ads_interface()
     reset_log(state)
     app.add_routes([

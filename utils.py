@@ -2,7 +2,10 @@ from dataclasses import dataclass, field
 from typing import TextIO
 from datetime import datetime
 from collections import deque
-from constants import TELEMETRY_BUFFER_SIZE
+from constants import (
+    CA_TELEMETRY_BUFFER_SIZE, GNSS_BUFFER_SIZE, SYSTEM_TELEMETRY_BUFFER_SIZE,
+    ELECTRIC_RECORD_BUFFER_SIZE
+)
 from aiohttp import web
 import adafruit_ads1x15.ads1115 as ADS
 import asyncio
@@ -60,18 +63,36 @@ class GNSSRecord:
     hdop: float | None = None
     sat_num: int | None = None
 
+@dataclass
+class SystemTelemetryRecord:
+    """
+        System telemetry record from Raspberry Pi
+
+        Attributes:
+            cpu_temp (float): CPU temperature in Celsius.
+            memory_usage (float): Memory usage percentage.
+            cpu_usage (float): CPU usage percentage.
+    """
+    cpu_temp: float
+    memory_usage: float
+    cpu_usage: float
+    timestamp: float = field(default_factory=get_current_timestamp)
 
 @dataclass
 class ElectricalRecord:
+    """
+        Electrical power record for battery and electronics
+    """
     timestamp: float
     current: float
     voltage: float
+    timestamp: float = field(default_factory=get_current_timestamp)
 
 
 @dataclass
 class TaskData:
     """
-        Stores periodic task metadata
+        Periodic task metadata
     """
     name: str
     task: asyncio.Task[None]
@@ -86,11 +107,21 @@ class AppState:
     log_files: list[str] = field(default_factory=lambda: [])
     tasks: list[TaskData] = field(default_factory=lambda: [])
     websockets: list[web.WebSocketResponse] = field(default_factory=lambda: [])
-    serial: Serial | None = None
+    ca_serial: Serial | None = None
+    gnss_serial: Serial | None = None
     ads: ADS.ADS1115 | None = None
     last_telemetry_time: datetime | None = None
-    last_telemetry_records: deque[CATelemetryRecord] = field(
-        default_factory=lambda: deque(maxlen=TELEMETRY_BUFFER_SIZE)
+    ca_telemetry_records: deque[CATelemetryRecord] = field(
+        default_factory=lambda: deque(maxlen=CA_TELEMETRY_BUFFER_SIZE)
+    )
+    gnss_records: deque[GNSSRecord] = field(
+        default_factory=lambda: deque(maxlen=GNSS_BUFFER_SIZE)
+    )
+    electric_records: deque[ElectricalRecord] = field(
+        default_factory=lambda: deque(maxlen=ELECTRIC_RECORD_BUFFER_SIZE)
+    )
+    system_telemetry_records: deque[SystemTelemetryRecord] = field(
+        default_factory=lambda: deque(maxlen=SYSTEM_TELEMETRY_BUFFER_SIZE)
     )
 
 

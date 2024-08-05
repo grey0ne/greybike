@@ -138,7 +138,7 @@ async def read_system_params(app: web.Application):
 def read_ca_telemetry_record(app: web.Application) -> CATelemetryRecord | None:
     state: AppState = app['state']
     if DEV_MODE:
-        last_record = state.ca_telemetry_records[-1] if state.ca_telemetry_records else None
+        last_record = get_last_record(state.ca_telemetry_records)
         return ca_record_from_random(last_record)
     else:
         if state.ca_serial is not None:
@@ -158,6 +158,7 @@ async def ca_telemetry_log_task(app: web.Application):
     if last_record is not None:
         write_to_log(state, last_record)
 
+
 async def ca_telemetry_websocket_task(app: web.Application):
     state: AppState = app['state']
     last_record = get_last_record(state.ca_telemetry_records, CA_TELEMETRY_READ_INTERVAL)
@@ -165,6 +166,7 @@ async def ca_telemetry_websocket_task(app: web.Application):
         data_dict = last_record.__dict__
         state.log_record_count += 1
         await send_ws_message(app, MessageType.TELEMETRY, data_dict)
+
 
 async def gnss_task(app: web.Application):
     state: AppState = app['state']
@@ -251,5 +253,5 @@ def start_server():
 
 if __name__ == "__main__":
     if DEV_MODE:
-        logger.info('Running in development mode. Telemetry will be generated randomly.')
+        logger.info('Running in development mode. CA Telemetry will be generated randomly.')
     start_server()

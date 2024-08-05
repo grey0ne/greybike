@@ -78,12 +78,12 @@ class SystemTelemetryRecord:
     cpu_usage: float
     timestamp: float = field(default_factory=get_current_timestamp)
 
+
 @dataclass
 class ElectricalRecord:
     """
         Electrical power record for battery and electronics
     """
-    timestamp: float
     current: float
     voltage: float
     timestamp: float = field(default_factory=get_current_timestamp)

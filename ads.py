@@ -6,7 +6,7 @@ from adafruit_ads1x15.analog_in import AnalogIn
 from utils import ElectricalRecord, get_random_value
 
 
-BASE_VOLTAGE = 2.4254 # ACS712 20A sensor has 2.5V output when no current is flowing
+BASE_VOLTAGE = 2.4134 # ACS712 20A sensor has 2.5V output when no current is flowing
 AMP_CONVERSION_CF = -1.85 # ACS712 20A coefficient should (185mv/A)
 
 VOLTAGE_DIVIDER_CF = 21.7 # 200kOhm / 10kOhm voltage divider. And some further calubration

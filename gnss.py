@@ -37,12 +37,16 @@ def parse_GGA(values: list[str]) -> GNSSRecord | None:
     except ValueError:
         logger.error(f'Error parsing GGA: {values}')
 
-def parse_RMC(values: list[str]) -> GNSSRecord:
-    return GNSSRecord(
-        latitude=float(values[3]),
-        longitude=float(values[5]),
-        speed=float(values[7]) * KNOTS_TO_KMH
-    )
+def parse_RMC(values: list[str]) -> GNSSRecord | None:
+    logger = logging.getLogger('greybike')
+    try:
+        return GNSSRecord(
+            latitude=float(values[3]),
+            longitude=float(values[5]),
+            speed=float(values[7]) * KNOTS_TO_KMH
+        )
+    except ValueError:
+        logger.error(f'Error parsing RMC: {values}')
 
 def parse_GLL(values: list[str]) -> GNSSRecord | None:
     logger = logging.getLogger('greybike')

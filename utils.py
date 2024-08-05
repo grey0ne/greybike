@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import TextIO
+from typing import TextIO, TypeVar
 from datetime import datetime
 from collections import deque
 from constants import (
@@ -18,8 +18,15 @@ def get_current_timestamp() -> float:
     return datetime.timestamp(datetime.now())
 
 
-@dataclass
-class CATelemetryRecord:
+@dataclass(kw_only=True, slots=True, frozen=True)
+class BaseRecord:
+    """
+        Base record class
+    """
+    timestamp: float = field(default_factory=get_current_timestamp)
+
+@dataclass(kw_only=True, slots=True, frozen=True)
+class CATelemetryRecord(BaseRecord):
     """
         Telemetry record from Cycle Analyst V3 serial output
     """
@@ -39,11 +46,10 @@ class CATelemetryRecord:
     mode: int
     flags: str
     is_brake_pressed: bool
-    timestamp: float = field(default_factory=get_current_timestamp)
 
 
-@dataclass
-class GNSSRecord:
+@dataclass(kw_only=True, slots=True, frozen=True)
+class GNSSRecord(BaseRecord):
     """
         GNSS record from bike onboard receiver. Currently using Holybro Micro m10
 
@@ -57,14 +63,14 @@ class GNSSRecord:
     """
     latitude: float
     longitude: float
-    timestamp: float = field(default_factory=get_current_timestamp)
     altitude: float | None = None
     speed: float | None = None
     hdop: float | None = None
     sat_num: int | None = None
 
-@dataclass
-class SystemTelemetryRecord:
+
+@dataclass(kw_only=True, slots=True, frozen=True)
+class SystemTelemetryRecord(BaseRecord):
     """
         System telemetry record from Raspberry Pi
 
@@ -76,20 +82,19 @@ class SystemTelemetryRecord:
     cpu_temp: float
     memory_usage: float
     cpu_usage: float
-    timestamp: float = field(default_factory=get_current_timestamp)
 
-@dataclass
-class ElectricalRecord:
+
+@dataclass(kw_only=True, slots=True, frozen=True)
+class ElectricalRecord(BaseRecord):
     """
         Electrical power record for battery and electronics
     """
-    timestamp: float
     current: float
     voltage: float
     timestamp: float = field(default_factory=get_current_timestamp)
 
 
-@dataclass
+@dataclass(kw_only=True, slots=True, frozen=True)
 class TaskData:
     """
         Periodic task metadata
@@ -110,7 +115,6 @@ class AppState:
     ca_serial: Serial | None = None
     gnss_serial: Serial | None = None
     ads: ADS.ADS1115 | None = None
-    last_telemetry_time: datetime | None = None
     ca_telemetry_records: deque[CATelemetryRecord] = field(
         default_factory=lambda: deque(maxlen=CA_TELEMETRY_BUFFER_SIZE)
     )
@@ -142,6 +146,13 @@ def get_random_value(from_: float, to_: float, step:float, previous: float | Non
         result = random.uniform(from_, to_)
     return round(result, 2)
 
+RecordType = TypeVar('RecordType', bound=BaseRecord)
+
+def get_last_record(records: deque[RecordType], interval: float | None = None) -> RecordType | None:
+    if len(records) > 0:
+        last_record = records[-1]
+        if interval is None or last_record.timestamp > datetime.now().timestamp() - interval * 2:
+            return last_record
 
 async def async_shell(command: str) -> int | None:
     process = await asyncio.create_subprocess_shell(

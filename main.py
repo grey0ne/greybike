@@ -14,11 +14,13 @@ from aiohttp import web
 from telemetry import ca_record_from_serial, ca_record_from_random, get_ca_serial_interface
 from ads import electric_record_from_ads, get_ads_interface
 from constants import (
-    TELEMETRY_LOG_DIRECTORY, CA_TELEMETRY_INTERVAL, GNSS_INTERVAL, FAVICON_DIRECTORY,
-    SYSTEM_PARAMS_INTERVAL, MANIFEST, APP_LOG_FILE, APP_LOG_DIRECTORY,
+    TELEMETRY_LOG_DIRECTORY,
+    CA_TELEMETRY_READ_INTERVAL, CA_TELEMETRY_LOG_INTERVAL, CA_TELEMETRY_WEBSOCKET_INTERVAL,
+    GNSS_READ_INTERVAL, FAVICON_DIRECTORY,
+    SYSTEM_PARAMS_READ_INTERVAL, MANIFEST, APP_LOG_FILE, APP_LOG_DIRECTORY,
     PING_INTERVAL
 )
-from utils import AppState, check_running_on_pi, CATelemetryRecord
+from utils import AppState, check_running_on_pi, CATelemetryRecord, get_last_record
 from tasks import create_periodic_task
 from telemetry_logs import write_to_log, reset_log
 from dash_page import DASH_PAGE_HTML
@@ -36,7 +38,6 @@ FAVICON_FILES = ['favicon-16.png', 'favicon-32.png', 'favicon-96.png', 'touch-ic
 PORT = int(os.environ.get('PORT', 8080))
 DEV_MODE = os.environ.get('DEV_MODE', 'false').lower() == 'true'
 TELEMETRY_TASK = 'telemetry_task'
-WEBSOCKET_TELEMETRY_INTERVAL = 0.1
 WS_TIMEOUT = 0.1 # in seconds
 
 class MessageType(StrEnum):
@@ -134,15 +135,6 @@ async def read_system_params(app: web.Application):
     await send_ws_message(app, MessageType.SYSTEM, data_dict)
 
 
-async def send_telemetry(app: web.Application):
-    state: AppState = app['state']
-    telemetry = state.ca_telemetry_records[-1] if state.ca_telemetry_records else None
-    if telemetry is not None and float(telemetry.timestamp) > datetime.now().timestamp() - 1:
-        data_dict = telemetry.__dict__
-        state.log_record_count += 1
-        await send_ws_message(app, MessageType.TELEMETRY, data_dict)
-
-
 def read_ca_telemetry_record(app: web.Application) -> CATelemetryRecord | None:
     state: AppState = app['state']
     if DEV_MODE:
@@ -153,14 +145,26 @@ def read_ca_telemetry_record(app: web.Application) -> CATelemetryRecord | None:
             return ca_record_from_serial(state.ca_serial)
 
 
-async def ca_telemetry_task(app: web.Application):
+async def ca_telemetry_read_task(app: web.Application):
     telemetry = read_ca_telemetry_record(app)
     state: AppState = app['state']
     if telemetry is not None:
         state.ca_telemetry_records.append(telemetry)
-        state.last_telemetry_time = datetime.now()
-    write_to_log(state, telemetry)
 
+
+async def ca_telemetry_log_task(app: web.Application):
+    state: AppState = app['state']
+    last_record = get_last_record(state.ca_telemetry_records, CA_TELEMETRY_READ_INTERVAL)
+    if last_record is not None:
+        write_to_log(state, last_record)
+
+async def ca_telemetry_websocket_task(app: web.Application):
+    state: AppState = app['state']
+    last_record = get_last_record(state.ca_telemetry_records, CA_TELEMETRY_READ_INTERVAL)
+    if last_record is not None:
+        data_dict = last_record.__dict__
+        state.log_record_count += 1
+        await send_ws_message(app, MessageType.TELEMETRY, data_dict)
 
 async def gnss_task(app: web.Application):
     state: AppState = app['state']
@@ -171,7 +175,7 @@ async def gnss_task(app: web.Application):
         if gnss_record is not None:
             await send_ws_message(app, MessageType.TELEMETRY, gnss_record.__dict__)
 
-async def ads_task(app: web.Application):
+async def electric_telemetry_read_task(app: web.Application):
     state: AppState = app['state']
     if state.ads is not None:
         electric_record_from_ads(state.ads)
@@ -191,10 +195,11 @@ async def on_shutdown(app: web.Application):
 async def start_background_tasks(app: web.Application):
     if not DEV_MODE:
         create_periodic_task(ping_router, app, name="Router Ping", interval=PING_INTERVAL)
-    create_periodic_task(ca_telemetry_task, app, name="Cycle Analyst Telemetry", interval=CA_TELEMETRY_INTERVAL)
-    create_periodic_task(gnss_task, app, name="GNSS", interval=GNSS_INTERVAL)
-    create_periodic_task(send_telemetry, app, name="Send Telemetry", interval=WEBSOCKET_TELEMETRY_INTERVAL)
-    create_periodic_task(read_system_params, app, name="System Params", interval=SYSTEM_PARAMS_INTERVAL)
+    create_periodic_task(ca_telemetry_read_task, app, name="Cycle Analyst Telemetry", interval=CA_TELEMETRY_READ_INTERVAL)
+    create_periodic_task(ca_telemetry_log_task, app, name="Cycle Analyst Log", interval=CA_TELEMETRY_LOG_INTERVAL)
+    create_periodic_task(ca_telemetry_websocket_task, app, name="Send CA Telemetry", interval=CA_TELEMETRY_WEBSOCKET_INTERVAL)
+    create_periodic_task(gnss_task, app, name="GNSS", interval=GNSS_READ_INTERVAL)
+    create_periodic_task(read_system_params, app, name="System Params", interval=SYSTEM_PARAMS_READ_INTERVAL)
 
 
 async def cleanup_background_tasks(app: web.Application):

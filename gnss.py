@@ -8,12 +8,6 @@ GNSS_SERIAL_INTERFACE = os.environ.get('GNSS_SERIAL', '/dev/ttyS0')
 GNSS_BAUD_RATE = 115200
 GNSS_SERIAL_TIMEOUT = 1
 
-GNSS_SERIAL = serial.Serial(
-    port=GNSS_SERIAL_INTERFACE,
-    baudrate=GNSS_BAUD_RATE,
-    timeout=1
-)
-
 KNOTS_TO_KMH = 1.852
 
 GLL = ['GPGLL', 'GNGLL'] # Geographic Position - Latitude/Longitude
@@ -23,6 +17,12 @@ GGA = ['GPGGA', 'GNGGA'] # Global positioning system fix data
 RMC = ['GNRMC','GPRMC'] # Recommended Minimum data
 VTG = ['GNVTG'] # Course over ground and Groundspeed
 
+def get_gnss_serial() -> serial.Serial:
+    return serial.Serial(
+        port=GNSS_SERIAL_INTERFACE,
+        baudrate=GNSS_BAUD_RATE,
+        timeout=GNSS_SERIAL_TIMEOUT
+    )
 
 def parse_GGA(values: list[str]) -> GNSSRecord | None:
     logger = logging.getLogger('greybike')
@@ -87,9 +87,3 @@ def gnss_from_random(previous: GNSSRecord | None ) -> GNSSRecord | None:
         altitude=get_random_value(800, 1000, 1, previous and previous.altitude),
         sat_num=int(get_random_value(0, 20, 1, previous and previous.sat_num)),
     )
-
-
-for x in range(2000):
-    res = gnss_from_serial(GNSS_SERIAL)
-    if res is not None:
-        print(res)

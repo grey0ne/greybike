@@ -26,7 +26,7 @@ from telemetry_logs import write_to_log, reset_log
 from dash_page import DASH_PAGE_HTML
 from logs_page import render_logs_page
 from wifi import ping_router
-from gnss import gnss_from_serial, gnss_from_random
+from gnss import gnss_from_serial, gnss_from_random, get_gnss_serial
 
 
 if check_running_on_pi():
@@ -197,10 +197,10 @@ async def on_shutdown(app: web.Application):
 async def start_background_tasks(app: web.Application):
     if not DEV_MODE:
         create_periodic_task(ping_router, app, name="Router Ping", interval=PING_INTERVAL)
+        create_periodic_task(gnss_task, app, name="GNSS", interval=GNSS_READ_INTERVAL)
     create_periodic_task(ca_telemetry_read_task, app, name="Cycle Analyst Telemetry", interval=CA_TELEMETRY_READ_INTERVAL)
     create_periodic_task(ca_telemetry_log_task, app, name="Cycle Analyst Log", interval=CA_TELEMETRY_LOG_INTERVAL)
     create_periodic_task(ca_telemetry_websocket_task, app, name="Send CA Telemetry", interval=CA_TELEMETRY_WEBSOCKET_INTERVAL)
-    create_periodic_task(gnss_task, app, name="GNSS", interval=GNSS_READ_INTERVAL)
     create_periodic_task(read_system_params, app, name="System Params", interval=SYSTEM_PARAMS_READ_INTERVAL)
 
 
@@ -228,6 +228,7 @@ def init():
     if not DEV_MODE:
         state.ca_serial = get_ca_serial_interface()
         state.ads = get_ads_interface()
+        state.gnss_serial = get_gnss_serial()
     reset_log(state)
     app.add_routes([
         web.get('/',   http_handler),

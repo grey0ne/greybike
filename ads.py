@@ -1,9 +1,13 @@
-import board # type: ignore Library does not have proper typing
+try:
+    import board # type: ignore Library does not have proper typing
+except:
+    board = None
 import busio # type: ignore Library does not have proper typing
 import adafruit_ads1x15.ads1115 as ADS
 from datetime import datetime
 from adafruit_ads1x15.analog_in import AnalogIn
 from utils import ElectricalRecord, get_random_value
+import logging
 
 
 BASE_VOLTAGE = 2.4134 # ACS712 20A sensor has 2.5V output when no current is flowing
@@ -35,6 +39,10 @@ def electric_record_from_random(previous: ElectricalRecord | None) -> Electrical
     )
 
 def get_ads_interface() -> ADS.ADS1115 | None:
+    logger = logging.getLogger('greybike')
+    if board is None:
+        logger.error("Board not available")
+        return None
     i2c = busio.I2C(board.SCL, board.SDA) # type: ignore
     ads = ADS.ADS1115(i2c)
     return ads

@@ -5,3 +5,4 @@ app_logs
 .env
 tmp.py
 .DS_Store
+js

@@ -7,7 +7,6 @@ import os
 import psutil
 import logging
 import logging.config
-import asyncio
 
 from aiohttp import web
 
@@ -17,9 +16,9 @@ from constants import (
     TELEMETRY_LOG_DIRECTORY, LOGGING_CONFIG, DEV_MODE,
     CA_TELEMETRY_READ_INTERVAL, CA_TELEMETRY_LOG_INTERVAL, CA_TELEMETRY_SEND_INTERVAL,
     ELECTRIC_RECORD_READ_INTERVAL,
-    GNSS_READ_INTERVAL, FAVICON_DIRECTORY,
+    GNSS_READ_INTERVAL, FAVICON_DIRECTORY, JS_DIRECTORY,
     SYSTEM_PARAMS_READ_INTERVAL, MANIFEST, APP_LOG_DIRECTORY,
-    PING_INTERVAL, WEBSOCKET_LISTEN_INTERVAL
+    PING_INTERVAL
 )
 from utils import AppState, check_running_on_pi, CATelemetryRecord, get_last_record, MessageType
 from tasks import create_periodic_task
@@ -66,7 +65,6 @@ async def websocket_handler(request: web.Request):
     try:
         async for msg in ws:
             logger.debug(f'Websocket message {msg}')
-            await asyncio.sleep(WEBSOCKET_LISTEN_INTERVAL)
     finally:
         state.websockets.remove(ws)
     return ws
@@ -193,6 +191,7 @@ def setup_routes(app: web.Application):
         web.get('/',   http_handler),
         web.get('/ws', websocket_handler),
         web.get('/manifest.json', manifest_handler),
+        web.get('/chart.js', get_file_serve_handler(f'{JS_DIRECTORY}/chart.js')),
         web.get('/logs', log_list_handler),
         web.post('/reset_log', reset_log_handler)
     ])

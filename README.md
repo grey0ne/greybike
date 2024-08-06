@@ -14,3 +14,6 @@ Run
 
 Install service
 ./install_service.sh
+
+Download external JS
+./update_js.sh

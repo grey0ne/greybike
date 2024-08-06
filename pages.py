@@ -25,7 +25,7 @@ HEAD_HTML = f"""
     <script>
         {SCRIPT_CONTENT}
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/chart.js"></script>
 </head>
 """
 

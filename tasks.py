@@ -1,6 +1,5 @@
 from typing import Any, Coroutine, TypeVar, Callable
-from aiohttp import web
-from utils import TaskData
+from utils import TaskData, AppState
 import asyncio
 import logging
 
@@ -29,14 +28,14 @@ def create_task(
     return task
 
 def create_periodic_task(
-    async_function: Callable[[web.Application], Coroutine[Any, Any, None]],
-    app: web.Application,
+    async_function: Callable[[AppState], Coroutine[Any, Any, None]],
+    app_state: AppState,
     name: str,
     interval: float,
 ) -> None:
     async def closure():
         while True:
-            await async_function(app)
+            await async_function(app_state)
             await asyncio.sleep(interval)
     logger.info(f"Creating task {name} with interval {interval}")
     task = TaskData(
@@ -44,5 +43,5 @@ def create_periodic_task(
         task=create_task(closure(), name=name),
         interval=interval
     )
-    app['state'].tasks.append(task)
+    app_state.tasks.append(task)
 

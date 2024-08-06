@@ -7,16 +7,24 @@ from constants import (
     ELECTRIC_RECORD_BUFFER_SIZE
 )
 from aiohttp import web
+from enum import StrEnum
 import adafruit_ads1x15.ads1115 as ADS
 import asyncio
 import os
 import random
+import busio # type: ignore
 from serial import Serial
 
 
 def get_current_timestamp() -> float:
     return datetime.timestamp(datetime.now())
 
+class MessageType(StrEnum):
+    SYSTEM = 'system'
+    TELEMETRY = 'telemetry'
+    GNSS = 'gnss'
+    EVENT = 'event'
+    ELECTRIC = 'electric'
 
 @dataclass(kw_only=True, slots=True, frozen=True)
 class BaseRecord:
@@ -115,6 +123,7 @@ class AppState:
     ca_serial: Serial | None = None
     gnss_serial: Serial | None = None
     ads: ADS.ADS1115 | None = None
+    i2c: busio.I2C | None = None
     ca_telemetry_records: deque[CATelemetryRecord] = field(
         default_factory=lambda: deque(maxlen=CA_TELEMETRY_BUFFER_SIZE)
     )

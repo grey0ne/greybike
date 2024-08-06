@@ -1,5 +1,4 @@
-from utils import async_shell, check_running_on_pi
-from aiohttp import web
+from utils import async_shell, check_running_on_pi, AppState
 from constants import PING_TIMEOUT, ROUTER_HOSTNAME
 import logging
 import asyncio
@@ -14,7 +13,7 @@ async def restart_wifi():
     else:
         logger.error('Restarting wifi not supported on this platform')
 
-async def ping_router(app: web.Application):
+async def ping_router(state: AppState):
     logger = logging.getLogger('greybike')
     command = f'ping -c 1 -W{PING_TIMEOUT} {ROUTER_HOSTNAME}'
     ping_result = await async_shell(command)

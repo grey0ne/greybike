@@ -1,7 +1,7 @@
 from constants import LOG_VERSION, TELEMETRY_LOG_DIRECTORY, LOG_RECORD_COUNT_LIMIT
 from datetime import datetime
 from utils import AppState, CATelemetryRecord
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, fields, asdict
 from typing import Generator
 import os
 import logging
@@ -47,13 +47,12 @@ def write_to_log(state: AppState, telemetry: CATelemetryRecord | None):
     if telemetry is not None:
         if state.log_record_count >= LOG_RECORD_COUNT_LIMIT:
             reset_log(state)
-        data = telemetry.__dict__
+        data = asdict(telemetry)
         data['timestamp'] = "%.2f" % telemetry.timestamp
         log_record = ','.join(str(data[field]) for field in get_log_fields())
         if state.log_file is None:
             raise ValueError('Log file not open')
         state.log_file.write(f'{log_record}\n')
-
 
 def reset_log(state: AppState):
     logger = logging.getLogger('greybike')

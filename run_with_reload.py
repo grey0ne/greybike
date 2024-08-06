@@ -6,7 +6,7 @@ import signal
 from typing import Any, Iterable
 
 
-def is_python(name: str):
+def is_code(name: str):
     return name.endswith(".py") or name.endswith(".js") or name.endswith(".css")
 
 def end_child_process():
@@ -20,12 +20,13 @@ signal.signal(signal.SIGINT, signal_handler)
 
 def file_times(root_path: str) -> Iterable[float]:
     for path in os.listdir(root_path):
-        if os.path.isdir(path):
-            max_times = list(file_times(path))
+        full_path = os.path.join(root_path, path)
+        if os.path.isdir(full_path):
+            max_times = list(file_times(full_path))
             if len(max_times) > 0:
                 yield max(max_times)
-        if is_python(path):
-            yield os.stat(path).st_mtime
+        if is_code(full_path):
+            yield os.stat(full_path).st_mtime
 
 
 def print_stdout(process: Any):

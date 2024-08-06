@@ -54,7 +54,9 @@ async def reset_log_handler(request: web.Request):
 
 def get_file_serve_handler(file_path: str):
     async def file_serve_handler(request: web.Request):
-        return web.FileResponse(file_path)
+        response = web.FileResponse(file_path)
+        response.headers.setdefault('Cache-Control', 'max-age=3600')
+        return response
     return file_serve_handler
 
 async def websocket_handler(request: web.Request):

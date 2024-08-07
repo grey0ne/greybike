@@ -1,4 +1,3 @@
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 from dataclasses import asdict
@@ -15,12 +14,12 @@ from ads import electric_record_from_ads, get_ads_interface, get_i2c_interface
 from constants import (
     TELEMETRY_LOG_DIRECTORY, LOGGING_CONFIG, DEV_MODE,
     CA_TELEMETRY_READ_INTERVAL, CA_TELEMETRY_LOG_INTERVAL, CA_TELEMETRY_SEND_INTERVAL,
-    ELECTRIC_RECORD_READ_INTERVAL,
-    GNSS_READ_INTERVAL, FAVICON_DIRECTORY, JS_DIRECTORY,
-    SYSTEM_PARAMS_READ_INTERVAL, MANIFEST, APP_LOG_DIRECTORY,
-    PING_INTERVAL
+    ELECTRIC_RECORD_READ_INTERVAL, ELECTRIC_RECORD_SEND_INTERVAL,
+    GNSS_READ_INTERVAL, GNSS_SEND_INTERVAL, FAVICON_DIRECTORY, JS_DIRECTORY,
+    SYSTEM_PARAMS_READ_INTERVAL, SYSTEM_PARAMS_SEND_INTERVAL, 
+    MANIFEST, APP_LOG_DIRECTORY, PING_INTERVAL
 )
-from utils import AppState, check_running_on_pi, CATelemetryRecord, get_last_record, MessageType
+from utils import AppState, check_running_on_pi, CATelemetryRecord, get_last_record, MessageType, SystemTelemetryRecord
 from tasks import create_periodic_task
 from telemetry_logs import write_to_log, reset_log
 from dash_page import DASH_PAGE_HTML
@@ -71,6 +70,7 @@ async def websocket_handler(request: web.Request):
         state.websockets.remove(ws)
     return ws
 
+
 async def send_ws_message(state: AppState, message_type: MessageType, data: dict[str, Any]):
     message = {
         'type': message_type,
@@ -82,18 +82,18 @@ async def send_ws_message(state: AppState, message_type: MessageType, data: dict
 
 
 async def read_system_params(state: AppState):
-    data_dict: dict[str, float | str | None] = {}
-    if CPUTemperature is not None:
-        data_dict['cpu_temperature'] = CPUTemperature().temperature
-    else:
-        data_dict['cpu_temperature'] = None
-    data_dict['memory_usage'] = psutil.virtual_memory().percent
-    data_dict['cpu_usage'] = psutil.cpu_percent()
-    if state.log_file is not None:
-        data_dict['log_file'] = state.log_file.name.split('/')[-1]
-    if state.log_start_time is not None:
-        data_dict['log_duration'] = (datetime.now() - state.log_start_time).total_seconds()
-    await send_ws_message(state, MessageType.SYSTEM, data_dict)
+    record = SystemTelemetryRecord(
+        cpu_temp=None if CPUTemperature is None else CPUTemperature().temperature,
+        cpu_usage=psutil.cpu_percent(),
+        memory_usage=psutil.virtual_memory().percent
+    )
+    state.system_telemetry_records.append(record)
+
+
+async def send_system_params(state: AppState):
+    last_record = get_last_record(state.system_telemetry_records, SYSTEM_PARAMS_READ_INTERVAL)
+    if last_record is not None:
+        await send_ws_message(state, MessageType.SYSTEM, asdict(last_record))
 
 
 def read_ca_telemetry_record(state: AppState) -> CATelemetryRecord | None:
@@ -165,12 +165,15 @@ async def start_background_tasks(app: web.Application):
     state: AppState = app['state']
     if not DEV_MODE:
         create_periodic_task(ping_router, state, name="Router Ping", interval=PING_INTERVAL)
-    create_periodic_task(gnss_read_task, state, name="GNSS", interval=GNSS_READ_INTERVAL)
+    create_periodic_task(gnss_read_task, state, name="Read GNSS", interval=GNSS_READ_INTERVAL)
+    create_periodic_task(gnss_send_task, state, name="Send GNSS", interval=GNSS_SEND_INTERVAL)
     create_periodic_task(ca_telemetry_read_task, state, name="Cycle Analyst Telemetry", interval=CA_TELEMETRY_READ_INTERVAL)
     create_periodic_task(ca_telemetry_log_task, state, name="Cycle Analyst Log", interval=CA_TELEMETRY_LOG_INTERVAL)
     create_periodic_task(ca_telemetry_websocket_task, state, name="Send CA Telemetry", interval=CA_TELEMETRY_SEND_INTERVAL)
-    create_periodic_task(electric_telemetry_read_task, state, name="Electric Telemetry Read", interval=ELECTRIC_RECORD_READ_INTERVAL)
-    create_periodic_task(read_system_params, state, name="System Params", interval=SYSTEM_PARAMS_READ_INTERVAL)
+    create_periodic_task(electric_telemetry_read_task, state, name="Read Electric Telemetry", interval=ELECTRIC_RECORD_READ_INTERVAL)
+    create_periodic_task(electric_telemetry_send_task, state, name="Send Electric Telemetry", interval=ELECTRIC_RECORD_SEND_INTERVAL)
+    create_periodic_task(read_system_params, state, name="Read System Params", interval=SYSTEM_PARAMS_READ_INTERVAL)
+    create_periodic_task(send_system_params, state, name="Send System Params", interval=SYSTEM_PARAMS_SEND_INTERVAL)
 
 
 async def cleanup_background_tasks(app: web.Application):

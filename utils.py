@@ -87,7 +87,7 @@ class SystemTelemetryRecord(BaseRecord):
             memory_usage (float): Memory usage percentage.
             cpu_usage (float): CPU usage percentage.
     """
-    cpu_temp: float
+    cpu_temp: float | None = None
     memory_usage: float
     cpu_usage: float
 

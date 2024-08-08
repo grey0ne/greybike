@@ -15,8 +15,6 @@ AMP_CONVERSION_CF = 0.185 # ACS712 5A coefficient (185mv/A)
 VOLTAGE_DIVIDER_CF = 21.7 # 200kOhm / 10kOhm voltage divider. And some further calubration
 
 
-def rd(value: float):
-    return round(value, 4)
 
 def electric_record_from_ads(ads: ADS.ADS1115) -> ElectricalRecord:
     current_channel = AnalogIn(ads, ADS.P0) # ACS712 20A sensor connected to A0. Measures current flowing to the bike's electronics
@@ -25,7 +23,6 @@ def electric_record_from_ads(ads: ADS.ADS1115) -> ElectricalRecord:
     base_voltage = reference_voltage_channel.voltage
     amps = (base_voltage - current_channel.voltage) / AMP_CONVERSION_CF
     battery_voltage = voltage_channel.voltage * VOLTAGE_DIVIDER_CF
-    print(f"A1 Value: {rd(voltage_channel.voltage)} Voltage: {rd(battery_voltage)} Amps: {rd(amps)} Watts: {rd(amps * battery_voltage)}")
     return ElectricalRecord(
         timestamp=datetime.timestamp(datetime.now()),
         current=amps,

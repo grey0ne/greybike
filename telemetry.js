@@ -12,6 +12,8 @@ const DASH_MODES = [ASSIST_MODE, POWER_MODE, ODO_MODE, SYSTEM_MODE];
 const TELEMETRY_MESSAGE = 'telemetry';
 const SYSTEM_MESSAGE = 'system';
 const STATUS_MESSAGE = 'status';
+const GNSS_MESSAGE = 'gnss';
+const ELECTRIC_MESSAGE = 'electric';
 
 const PARAM_DICT = {
     'amper_hours': {'name': 'Amper Hours', 'unit': 'Ah', 'modes': [ODO_MODE]},
@@ -64,12 +66,16 @@ function processTelemetryMessage(data) {
 }
 
 function processSystemMessage(data) {
-
-    const chart = window.chart;
     if (data['log_file']){
         document.getElementById('log_duration').innerText = data['log_duration'].toFixed(1);
         document.getElementById('log_file').innerText = data['log_file'];
     }
+}
+
+function processElectricMessage(data) {
+}
+
+function processGNSSMessage(data) {
 }
 
 function getWakeLock() {
@@ -178,6 +184,7 @@ changeMode = (event) => {
     }
     initParamContainers();
 }
+
 window.onload = () => {
     const paramContainer = document.getElementById("telemetry-params");
     window.currentDashMode = 0;

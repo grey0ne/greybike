@@ -10,7 +10,7 @@ import logging.config
 from aiohttp import web
 
 from telemetry import ca_record_from_serial, ca_record_from_random, get_ca_serial_interface
-from ads import electric_record_from_ads, get_ads_interface, get_i2c_interface
+from ads import electric_record_from_ads, get_ads_interface, get_i2c_interface, electric_record_from_random
 from constants import (
     TELEMETRY_LOG_DIRECTORY, LOGGING_CONFIG, DEV_MODE,
     CA_TELEMETRY_READ_INTERVAL, CA_TELEMETRY_LOG_INTERVAL, CA_TELEMETRY_SEND_INTERVAL,
@@ -141,8 +141,15 @@ async def gnss_send_task(state: AppState):
 
 
 async def electric_telemetry_read_task(state: AppState):
+    record = None
+    if DEV_MODE:
+        last_record = get_last_record(state.electric_records)
+        record = electric_record_from_random(last_record)
     if state.ads is not None:
-        state.electric_records.append(electric_record_from_ads(state.ads))
+        record = electric_record_from_ads(state.ads)
+    if record is not None:
+        state.electric_records.append(record)
+
 
 async def electric_telemetry_send_task(state: AppState):
     last_record = get_last_record(state.electric_records, ELECTRIC_RECORD_READ_INTERVAL)

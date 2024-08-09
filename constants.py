@@ -6,7 +6,7 @@ DEV_MODE = os.environ.get('DEV_MODE', 'false').lower() == 'true'
 SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))
 MANIFEST_FILE = os.path.join(SOURCE_DIR, 'manifest.json')
 JS_FILE = os.path.join(SOURCE_DIR, 'telemetry.js')
-STYLES_FILE = os.path.join(SOURCE_DIR, 'styles.css')
+STYLES_FILE = os.path.join(SOURCE_DIR, 'src/dash.css')
 TELEMETRY_LOG_DIRECTORY = os.path.join(SOURCE_DIR, 'telemetry_logs')
 APP_LOG_DIRECTORY = os.path.join(SOURCE_DIR, 'app_logs')
 FAVICON_DIRECTORY = os.path.join(SOURCE_DIR, 'icons')

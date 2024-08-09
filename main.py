@@ -156,6 +156,7 @@ async def electric_telemetry_send_task(state: AppState):
     if last_record is not None:
         await send_ws_message(state, MessageType.ELECTRIC, asdict(last_record))
 
+
 async def on_shutdown(app: web.Application):
     state: AppState = app['state']
     if state.ca_serial is not None:

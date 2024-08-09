@@ -22,7 +22,8 @@ RESISTOR = 10000 # 10kOm resistor
 
 TEMP_CF = 273.15
 
-def calculate_temp_from_voltage_diff(vcf: float) -> float:
+def calculate_temp_from_voltage(thermistor_voltage: float, reference_voltage: float) -> float:
+    vcf = thermistor_voltage / (reference_voltage * 2)
     thermistor_resistance = (vcf * RESISTOR) / (1 - vcf)
     temp = 1 / (math.log(thermistor_resistance/THERMISTOR_R) / THERMISTOR_CF + 1 / (NOMINAL_TEMP + TEMP_CF)) - TEMP_CF
     return temp
@@ -33,8 +34,7 @@ def electric_record_from_ads(ads: ADS.ADS1115) -> ElectricalRecord:
     voltage_channel = AnalogIn(ads, ADS.P1) # Voltage divider connected to A1. Measures battery voltage
     reference_voltage_channel = AnalogIn(ads, ADS.P2) # Voltage divider connected to A2. Should have halved main voltage
     thermistor_channel = AnalogIn(ads, ADS.P3) # 10K Thermistor with 10K resistor
-    vcf = thermistor_channel.voltage / (reference_voltage_channel.voltage * 2)
-    temp = calculate_temp_from_voltage_diff(vcf)
+    temp = calculate_temp_from_voltage(thermistor_channel.voltage, reference_voltage_channel.voltage)
     print("Temp: ", temp)
     base_voltage = reference_voltage_channel.voltage
     amps = (base_voltage - current_channel.voltage) / AMP_CONVERSION_CF

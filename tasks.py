@@ -1,5 +1,5 @@
 from typing import Any, Coroutine, TypeVar, Callable
-from utils import TaskData, AppState
+from data_types import TaskData, AppState
 import asyncio
 import logging
 

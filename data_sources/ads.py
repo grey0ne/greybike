@@ -6,7 +6,8 @@ import busio # type: ignore Library does not have proper typing
 import adafruit_ads1x15.ads1115 as ADS
 from datetime import datetime
 from adafruit_ads1x15.analog_in import AnalogIn
-from utils import ElectricalRecord, get_random_value
+from data_types import ElectricalRecord
+from utils import get_random_value
 import logging
 import math
 

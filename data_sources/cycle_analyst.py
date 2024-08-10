@@ -1,22 +1,17 @@
 import serial
-import os
 import logging
 from datetime import datetime
 from serial.serialutil import SerialException
-from utils import CATelemetryRecord, get_random_value
-from constants import SERIAL_TIMEOUT, SERIAL_BAUD_RATE
+from utils import get_random_value
+from data_types import CATelemetryRecord, SoftwareSerial
+from constants import SERIAL_TIMEOUT, CA_SERIAL_BAUD_RATE, CA_HARDWARE_SERIAL, CA_SOFTWARE_SERIAL_PIN
+from data_sources.software_serial import readlines_from_software_serial, init_software_serial
 
-CA_INTERFACE = os.environ.get('CA_SERIAL')
 CA_LINE_VALUES_COUNT = 14
 
-
-def parse_telemetry_line(line: bytes) -> CATelemetryRecord | None:
+def parse_telemetry_line(line: str) -> CATelemetryRecord | None:
     logger = logging.getLogger('greybike')
-    try:
-        values = line.decode("utf-8").replace('\r\n', '').split('\t')
-    except Exception as e:
-        logger.error(f'Error decoding serial line: {e}')
-        return None
+    values = line.replace('\r\n', '').split('\t')
     if len(values) != CA_LINE_VALUES_COUNT:
         logger.error(f'Incorrect number of values in serial line: {len(values)} expected {CA_LINE_VALUES_COUNT}')
         return None
@@ -42,10 +37,27 @@ def parse_telemetry_line(line: bytes) -> CATelemetryRecord | None:
     )
 
 
-def ca_record_from_serial(ser: serial.Serial) -> CATelemetryRecord | None:
+def ca_record_from_hardware_serial(ser: serial.Serial) -> CATelemetryRecord | None:
+    logger = logging.getLogger('greybike')
     line = ser.readline()
+    try:
+        line = line.decode("utf-8")
+    except Exception as e:
+        logger.error(f'Error decoding serial line: {e}')
+        return None
     return parse_telemetry_line(line)
 
+def ca_record_from_software_serial(ser: SoftwareSerial) -> CATelemetryRecord | None:
+    """
+        Returns the latest sucessfully parsed telemetry record from the Cycle Analyst V3
+    """
+    lines = readlines_from_software_serial(ser)
+    parsed_line = None
+    for line in lines:
+        result = parse_telemetry_line(line)
+        if result is not None:
+            parsed_line = result
+    return parsed_line
 
 def ca_record_from_random(previous: CATelemetryRecord | None) -> CATelemetryRecord:
     return CATelemetryRecord(
@@ -67,11 +79,27 @@ def ca_record_from_random(previous: CATelemetryRecord | None) -> CATelemetryReco
         is_brake_pressed=False
     )
 
-def get_ca_serial_interface() -> serial.Serial | None:
+def get_ca_hardware_serial() -> serial.Serial | None:
     logger = logging.getLogger('greybike')
+    if CA_HARDWARE_SERIAL is None:
+        logger.error('CA_HARDWARE_SERIAL is not set using software serial')
+        return None
     try:
-        ser = serial.Serial(CA_INTERFACE, SERIAL_BAUD_RATE, timeout=SERIAL_TIMEOUT)
-        logger.info(f'Using serial interface {CA_INTERFACE}')
+        ser = serial.Serial(CA_HARDWARE_SERIAL, CA_SERIAL_BAUD_RATE, timeout=SERIAL_TIMEOUT)
+        logger.info(f'Using hardware serial interface for CA {CA_HARDWARE_SERIAL}')
         return ser
     except SerialException:
-        logger.error(f'Could not open serial interface {CA_INTERFACE}')
+        logger.error(f'Could not open serial interface {CA_HARDWARE_SERIAL}')
+
+
+def get_ca_software_serial() -> SoftwareSerial | None:
+    logger = logging.getLogger('greybike')
+    if CA_HARDWARE_SERIAL is not None:
+        # If hardware serial is set, software serial is not used
+        return None
+    try:
+        ser = init_software_serial(CA_SOFTWARE_SERIAL_PIN, CA_SERIAL_BAUD_RATE)
+        logger.info(f'Using software serial interface on GPIO {CA_SOFTWARE_SERIAL_PIN}')
+        return ser
+    except Exception as e:
+        logger.error(f'Could not open software serial interface on GPIO {CA_SOFTWARE_SERIAL_PIN}: {e}')

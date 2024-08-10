@@ -1,4 +1,5 @@
-from utils import async_shell, check_running_on_pi, AppState
+from utils import async_shell, check_running_on_pi
+from data_types import AppState
 from constants import PING_TIMEOUT, ROUTER_HOSTNAME
 import logging
 import asyncio

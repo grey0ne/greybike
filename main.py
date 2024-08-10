@@ -9,7 +9,7 @@ import logging.config
 
 from aiohttp import web
 
-from data_sources.cycle_analyst import ca_record_from_serial, ca_record_from_random, get_ca_serial_interface
+from data_sources.cycle_analyst import ca_record_from_hardware_serial, ca_record_from_random, get_ca_hardware_serial
 from data_sources.ads import electric_record_from_ads, get_ads_interface, get_i2c_interface, electric_record_from_random
 from data_sources.gnss import gnss_from_serial, gnss_from_random, get_gnss_serial
 from constants import (
@@ -20,7 +20,8 @@ from constants import (
     SYSTEM_PARAMS_READ_INTERVAL, SYSTEM_PARAMS_SEND_INTERVAL, 
     MANIFEST, APP_LOG_DIRECTORY, PING_INTERVAL
 )
-from utils import AppState, check_running_on_pi, CATelemetryRecord, get_last_record, MessageType, SystemTelemetryRecord
+from utils import check_running_on_pi, get_last_record
+from data_types import AppState, CATelemetryRecord, MessageType, SystemTelemetryRecord
 from tasks import create_periodic_task
 from telemetry_logs import write_to_log, reset_log
 from dash_page import DASH_PAGE_HTML
@@ -105,7 +106,7 @@ def read_ca_telemetry_record(state: AppState) -> CATelemetryRecord | None:
         return ca_record_from_random(last_record)
     else:
         if state.ca_serial is not None:
-            return ca_record_from_serial(state.ca_serial)
+            return ca_record_from_hardware_serial(state.ca_serial)
 
 
 async def ca_telemetry_read_task(state: AppState):
@@ -235,7 +236,7 @@ def init():
     state = AppState(log_files=get_all_log_files())
     app['state'] = state
     if not DEV_MODE:
-        state.ca_serial = get_ca_serial_interface()
+        state.ca_serial = get_ca_hardware_serial()
         state.i2c = get_i2c_interface()
         if state.i2c is not None:
             state.ads = get_ads_interface(state.i2c)

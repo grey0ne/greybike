@@ -1,6 +1,6 @@
 from constants import LOG_VERSION, TELEMETRY_LOG_DIRECTORY, LOG_RECORD_COUNT_LIMIT
 from datetime import datetime
-from utils import AppState, CATelemetryRecord
+from data_types import AppState, CATelemetryRecord
 from dataclasses import dataclass, fields, asdict
 from typing import Generator
 import os

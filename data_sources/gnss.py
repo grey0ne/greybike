@@ -1,11 +1,10 @@
 import serial
-import os
 import logging
 
-from utils import GNSSRecord, get_random_value
+from utils import get_random_value
+from data_types import GNSSRecord
+from constants import GNSS_BAUD_RATE, GNSS_SERIAL_INTERFACE
 
-GNSS_SERIAL_INTERFACE = os.environ.get('GNSS_SERIAL', '/dev/ttyS0')
-GNSS_BAUD_RATE = 115200
 GNSS_SERIAL_TIMEOUT = 1
 
 KNOTS_TO_KMH = 1.852

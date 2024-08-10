@@ -2,6 +2,7 @@ import os
 from typing import Any
 
 DEV_MODE = os.environ.get('DEV_MODE', 'false').lower() == 'true'
+SERVER_PORT = int(os.environ.get('PORT', 8080))
 
 SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(SOURCE_DIR, 'public')
@@ -42,6 +43,7 @@ SYSTEM_PARAMS_SEND_INTERVAL = 1
 PING_INTERVAL = 5
 
 SERIAL_TIMEOUT = 0.05 # In seconds
+WS_TIMEOUT = 0.1 # in seconds
 PING_TIMEOUT = 1 # In seconds
 ROUTER_HOSTNAME = os.environ.get('ROUTER_HOSTNAME', 'router.grey')
 

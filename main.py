@@ -1,7 +1,5 @@
 from pathlib import Path
-from typing import Any
 from dataclasses import asdict
-import json
 import os
 import psutil
 import logging
@@ -13,19 +11,21 @@ from data_sources.cycle_analyst import ca_record_from_hardware_serial, ca_record
 from data_sources.ads import electric_record_from_ads, get_ads_interface, get_i2c_interface, electric_record_from_random
 from data_sources.gnss import gnss_from_serial, gnss_from_random, get_gnss_serial
 from constants import (
-    TELEMETRY_LOG_DIRECTORY, LOGGING_CONFIG, DEV_MODE, SPA_HTML_FILE, SPA_ASSETS_DIR,
+    TELEMETRY_LOG_DIRECTORY, LOGGING_CONFIG, DEV_MODE, SPA_HTML_FILE,
     CA_TELEMETRY_READ_INTERVAL, CA_TELEMETRY_LOG_INTERVAL, CA_TELEMETRY_SEND_INTERVAL,
     ELECTRIC_RECORD_READ_INTERVAL, ELECTRIC_RECORD_SEND_INTERVAL,
     GNSS_READ_INTERVAL, GNSS_SEND_INTERVAL, FAVICON_DIRECTORY, JS_DIRECTORY,
     SYSTEM_PARAMS_READ_INTERVAL, SYSTEM_PARAMS_SEND_INTERVAL, 
-    MANIFEST, APP_LOG_DIRECTORY, PING_INTERVAL
+    APP_LOG_DIRECTORY, PING_INTERVAL, SERVER_PORT
 )
-from utils import check_running_on_pi, get_last_record
+from utils import check_running_on_pi, get_last_record, send_ws_message
+from handlers import (
+    http_handler, websocket_handler, manifest_handler, spa_asset_handler,
+    reset_log_handler, get_file_serve_handler, log_list_handler
+)
 from data_types import AppState, CATelemetryRecord, MessageType, SystemTelemetryRecord
 from tasks import create_periodic_task
 from telemetry_logs import write_to_log, reset_log
-from dash_page import DASH_PAGE_HTML
-from logs_page import render_logs_page
 from wifi import ping_router
 
 
@@ -35,54 +35,9 @@ else:
     CPUTemperature = None
 
 FAVICON_FILES = ['favicon-16.png', 'favicon-32.png', 'favicon-96.png', 'touch-icon-76.png']
-PORT = int(os.environ.get('PORT', 8080))
 TELEMETRY_TASK = 'telemetry_task'
-WS_TIMEOUT = 0.1 # in seconds
 
 logging.config.dictConfig(LOGGING_CONFIG)
-logger = logging.getLogger('greybike')
-
-async def http_handler(request: web.Request):
-    return web.Response(text=DASH_PAGE_HTML, content_type='text/html')
-
-async def manifest_handler(request: web.Request):
-    return web.Response(text=MANIFEST, content_type='application/json')
-
-async def reset_log_handler(request: web.Request):
-    reset_log(request.app['state'])
-    return web.Response(text='Log file reset')
-
-def file_response(file_path: str) -> web.FileResponse:
-    response = web.FileResponse(file_path)
-    response.headers.setdefault('Cache-Control', 'max-age=3600')
-    return response
-
-def get_file_serve_handler(file_path: str):
-    async def file_serve_handler(request: web.Request):
-        return file_response(file_path)
-    return file_serve_handler
-
-async def websocket_handler(request: web.Request):
-    ws = web.WebSocketResponse(timeout=WS_TIMEOUT)
-    await ws.prepare(request)
-    state: AppState = request.app['state']
-    state.websockets.append(ws)
-    try:
-        async for msg in ws:
-            logger.debug(f'Websocket message {msg}')
-    finally:
-        state.websockets.remove(ws)
-    return ws
-
-
-async def send_ws_message(state: AppState, message_type: MessageType, data: dict[str, Any]):
-    message = {
-        'type': message_type,
-        'data': data
-    }
-    message_str = json.dumps(message)
-    for ws in state.websockets:
-        await ws.send_str(message_str)
 
 
 async def read_system_params(state: AppState):
@@ -126,6 +81,7 @@ async def ca_telemetry_websocket_task(state: AppState):
     last_record = get_last_record(state.ca_telemetry_records, CA_TELEMETRY_READ_INTERVAL)
     if last_record is not None:
         await send_ws_message(state, MessageType.TELEMETRY, asdict(last_record))
+
 
 async def gnss_read_task(state: AppState):
     gnss_record = None
@@ -189,26 +145,15 @@ async def start_background_tasks(app: web.Application):
 
 
 async def cleanup_background_tasks(app: web.Application):
+    logger = logging.getLogger('greybike')
     state: AppState = app['state']
     for task_data in state.tasks:
         logger.info(f'Cancelling task {task_data.name}')
         task_data.task.cancel()
 
 
-async def log_list_handler(request: web.Request):
-    state: AppState = request.app['state']
-    return web.Response(text=render_logs_page(state.log_files), content_type='text/html')
-
-
 def get_all_log_files():
     return os.listdir(TELEMETRY_LOG_DIRECTORY)
-
-async def spa_asset_handler(request: web.Request):
-    file_name = request.match_info['file']
-    file_path = os.path.join(SPA_ASSETS_DIR, file_name)
-    if not os.path.exists(file_path):
-        return web.Response(text='File not found', status=404)
-    return file_response(file_path)
 
 def setup_routes(app: web.Application):
     app.add_routes([
@@ -251,10 +196,11 @@ def init():
 
 def start_server():
     app = init()
-    web.run_app(app=app, host='0.0.0.0', port=PORT) # type: ignore
+    web.run_app(app=app, host='0.0.0.0', port=SERVER_PORT) # type: ignore
 
 
 if __name__ == "__main__":
+    logger = logging.getLogger('greybike')
     if DEV_MODE:
         logger.info('Running in development mode. CA Telemetry will be generated randomly.')
     start_server()

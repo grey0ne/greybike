@@ -1,11 +1,21 @@
-from typing import TypeVar
+from typing import TypeVar, Any
 from datetime import datetime
 from collections import deque
 import asyncio
 import os
 import random
-from data_types import BaseRecord
+import json
+from data_types import BaseRecord, AppState, MessageType
 
+
+async def send_ws_message(state: AppState, message_type: MessageType, data: dict[str, Any]):
+    message = {
+        'type': message_type,
+        'data': data
+    }
+    message_str = json.dumps(message)
+    for ws in state.websockets:
+        await ws.send_str(message_str)
 
 
 def get_random_value(from_: float, to_: float, step:float, previous: float | None) -> float:

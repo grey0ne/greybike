@@ -1,5 +1,5 @@
 import time
-from ads import electric_record_from_ads, get_ads_interface, get_i2c_interface
+from data_sources.ads import electric_record_from_ads, get_ads_interface, get_i2c_interface
 
 def rd(value: float):
     return round(value, 4)

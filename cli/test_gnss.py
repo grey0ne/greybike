@@ -1,4 +1,4 @@
-from gnss import gnss_from_serial, get_gnss_serial
+from data_sources.gnss import gnss_from_serial, get_gnss_serial
 
 GNSS_SERIAL = get_gnss_serial()
 

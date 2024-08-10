@@ -1,8 +1,5 @@
-import sys
 import time
-import difflib
-import pigpio
-from software_serial import (
+from data_sources.software_serial import (
     init_software_serial, close_software_serial, readlines_from_software_serial
 )
 

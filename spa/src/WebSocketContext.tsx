@@ -27,6 +27,10 @@ export const WebSocketProvider = (props: PropsWithChildren<WebSocketProviderProp
         })
         ws.addEventListener("message", (event) => {
             console.log("Message from server ", event.data)
+            setTelemetry((prevTelemetry) => {
+                const newTelemetry = JSON.parse(event.data);
+                return [...prevTelemetry, newTelemetry];
+            });
         })
         ws.addEventListener("error", () => {
             console.error('Socket encountered error. Closing socket');

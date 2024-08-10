@@ -9,10 +9,11 @@ import logging.config
 
 from aiohttp import web
 
-from telemetry import ca_record_from_serial, ca_record_from_random, get_ca_serial_interface
-from ads import electric_record_from_ads, get_ads_interface, get_i2c_interface, electric_record_from_random
+from data_sources.cycle_analyst import ca_record_from_serial, ca_record_from_random, get_ca_serial_interface
+from data_sources.ads import electric_record_from_ads, get_ads_interface, get_i2c_interface, electric_record_from_random
+from data_sources.gnss import gnss_from_serial, gnss_from_random, get_gnss_serial
 from constants import (
-    TELEMETRY_LOG_DIRECTORY, LOGGING_CONFIG, DEV_MODE,
+    TELEMETRY_LOG_DIRECTORY, LOGGING_CONFIG, DEV_MODE, SPA_HTML_FILE, SPA_ASSETS_DIR,
     CA_TELEMETRY_READ_INTERVAL, CA_TELEMETRY_LOG_INTERVAL, CA_TELEMETRY_SEND_INTERVAL,
     ELECTRIC_RECORD_READ_INTERVAL, ELECTRIC_RECORD_SEND_INTERVAL,
     GNSS_READ_INTERVAL, GNSS_SEND_INTERVAL, FAVICON_DIRECTORY, JS_DIRECTORY,
@@ -25,7 +26,6 @@ from telemetry_logs import write_to_log, reset_log
 from dash_page import DASH_PAGE_HTML
 from logs_page import render_logs_page
 from wifi import ping_router
-from gnss import gnss_from_serial, gnss_from_random, get_gnss_serial
 
 
 if check_running_on_pi():
@@ -51,11 +51,14 @@ async def reset_log_handler(request: web.Request):
     reset_log(request.app['state'])
     return web.Response(text='Log file reset')
 
+def file_response(file_path: str) -> web.FileResponse:
+    response = web.FileResponse(file_path)
+    response.headers.setdefault('Cache-Control', 'max-age=3600')
+    return response
+
 def get_file_serve_handler(file_path: str):
     async def file_serve_handler(request: web.Request):
-        response = web.FileResponse(file_path)
-        response.headers.setdefault('Cache-Control', 'max-age=3600')
-        return response
+        return file_response(file_path)
     return file_serve_handler
 
 async def websocket_handler(request: web.Request):
@@ -199,12 +202,21 @@ async def log_list_handler(request: web.Request):
 def get_all_log_files():
     return os.listdir(TELEMETRY_LOG_DIRECTORY)
 
+async def spa_asset_handler(request: web.Request):
+    file_name = request.match_info['file']
+    file_path = os.path.join(SPA_ASSETS_DIR, file_name)
+    if not os.path.exists(file_path):
+        return web.Response(text='File not found', status=404)
+    return file_response(file_path)
+
 def setup_routes(app: web.Application):
     app.add_routes([
         web.get('/',   http_handler),
         web.get('/ws', websocket_handler),
         web.get('/manifest.json', manifest_handler),
+        web.get('/assets/{file}', spa_asset_handler),
         web.get('/chart.js', get_file_serve_handler(f'{JS_DIRECTORY}/chart.js')),
+        web.get('/spa', get_file_serve_handler(SPA_HTML_FILE)),
         web.get('/logs', log_list_handler),
         web.post('/reset_log', reset_log_handler)
     ])

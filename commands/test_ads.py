@@ -17,5 +17,3 @@ def test_ads_sensor():
             power = record.current * record.voltage
             print(f"Voltage: {rd(record.voltage)} Amps: {rd(record.current)} Watts: {rd(power)}")
         time.sleep(0.2)
-
-test_ads_sensor()

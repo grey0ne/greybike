@@ -11,5 +11,7 @@ COMMANDS = {
     'test_software_serial': test_software_serial
 }
 
-if sys.argv[1] in COMMANDS:
+if len(sys.argv) == 2 and sys.argv[1] in COMMANDS:
     COMMANDS[sys.argv[1]]()
+else:
+    print('Avaliable commands: ', ' '.join(COMMANDS.keys()))

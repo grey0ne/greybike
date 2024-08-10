@@ -24,4 +24,12 @@ Install service
 ./install_service.sh
 ```
 
+Script for running commands
+```bash
+sudo cp bike.sh /usr/local/bin/bike
+```
 
+Than run
+```bash
+bike test_ads
+```

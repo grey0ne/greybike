@@ -42,14 +42,15 @@ except Exception as e:
 
 if interface is not None:
     print ("DATA - SOFTWARE SERIAL:")
-    while True:
-        try:
+    try:
+        while True:
             lines = readlines_from_software_uart(interface)
             for line in lines:
                 print(line)
             time.sleep(0.5)
-        except Exception as e:
-            print(e)
-            interface.bb_serial_read_close(RX_PIN_NUMBER)
-            interface.stop()
-            break
+    except Exception as e:
+        print(e)
+    finally:
+        print('Closing software UART')
+        interface.bb_serial_read_close(RX_PIN_NUMBER)
+        interface.stop()

@@ -21,7 +21,7 @@ from constants import (
 from utils import check_running_on_pi, get_last_record, send_ws_message
 from handlers import (
     http_handler, websocket_handler, manifest_handler, spa_asset_handler,
-    reset_log_handler, get_file_serve_handler, log_list_handler, spa_dev_reverse_proxy
+    reset_log_handler, get_file_serve_handler, log_list_handler
 )
 from data_types import AppState, CATelemetryRecord, MessageType, SystemTelemetryRecord
 from tasks import create_periodic_task
@@ -136,7 +136,7 @@ async def start_background_tasks(app: web.Application):
     create_periodic_task(gnss_read_task, state, name="Read GNSS", interval=GNSS_READ_INTERVAL)
     create_periodic_task(gnss_send_task, state, name="Send GNSS", interval=GNSS_SEND_INTERVAL)
     create_periodic_task(ca_telemetry_read_task, state, name="Cycle Analyst Telemetry", interval=CA_TELEMETRY_READ_INTERVAL)
-    # create_periodic_task(ca_telemetry_log_task, state, name="Cycle Analyst Log", interval=CA_TELEMETRY_LOG_INTERVAL)
+    create_periodic_task(ca_telemetry_log_task, state, name="Cycle Analyst Log", interval=CA_TELEMETRY_LOG_INTERVAL)
     create_periodic_task(ca_telemetry_websocket_task, state, name="Send CA Telemetry", interval=CA_TELEMETRY_SEND_INTERVAL)
     create_periodic_task(electric_telemetry_read_task, state, name="Read Electric Telemetry", interval=ELECTRIC_RECORD_READ_INTERVAL)
     create_periodic_task(electric_telemetry_send_task, state, name="Send Electric Telemetry", interval=ELECTRIC_RECORD_SEND_INTERVAL)
@@ -165,19 +165,9 @@ def setup_routes(app: web.Application):
         web.get('/logs', log_list_handler),
         web.post('/reset_log', reset_log_handler)
     ])
-    if DEV_MODE:
-        app.add_routes([
-            web.get('/spa', spa_dev_reverse_proxy),
-            web.get('/@vite/client', spa_dev_reverse_proxy),
-            web.get('/@react-refresh', spa_dev_reverse_proxy),
-            web.get('/src/{tail:.*}', spa_dev_reverse_proxy),
-            web.get('/node_modules/{tail:.*}', spa_dev_reverse_proxy)
-
-        ])
-    else:
-        app.add_routes([
-            web.get('/spa', get_file_serve_handler(SPA_HTML_FILE)),
-        ])
+    app.add_routes([
+        web.get('/spa', get_file_serve_handler(SPA_HTML_FILE)),
+    ])
     for icon_file in FAVICON_FILES:
         app.add_routes([
             web.get(f'/{icon_file}', get_file_serve_handler(f'{FAVICON_DIRECTORY}/{icon_file}'))

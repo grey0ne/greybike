@@ -54,6 +54,7 @@ def write_to_log(state: AppState, telemetry: CATelemetryRecord | None):
             raise ValueError('Log file not open')
         state.log_file.write(f'{log_record}\n')
 
+
 def reset_log(state: AppState):
     logger = logging.getLogger('greybike')
     if state.log_file is not None:

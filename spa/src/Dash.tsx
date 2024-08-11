@@ -20,18 +20,21 @@ function ParamContainer({ name, value, unit }: { name: string, value: number, un
 export default function Dash() {
     const socketData = useContext(WebSocketContext);
     const lastTelemetry = socketData?.telemetry[socketData.telemetry.length - 1];
-    let paramElems = [];
+    const paramElems = [];
     if (lastTelemetry) {
         for (const param of enumKeys(lastTelemetry)) {
             const paramData = PARAM_OPTIONS[param];
-            paramElems.push(
-                <ParamContainer key={param} name={paramData.name} value={lastTelemetry[param]} unit={paramData.unit} />
-            )
+            if (paramData) {
+                paramElems.push(
+                    <ParamContainer key={param} name={paramData.name} value={lastTelemetry[param]} unit={paramData.unit} />
+                )
+            }
         }
     }
     return (
         <>
             <div id="telemetry-params">
+                { paramElems }
             </div>
             <div className="row">
                 <button id="next-mode-button" className="default-button row-elem">Next Mode</button>

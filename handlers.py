@@ -1,4 +1,4 @@
-from aiohttp import web, ClientSession
+from aiohttp import web
 
 from telemetry_logs import reset_log
 from dash_page import DASH_PAGE_HTML
@@ -8,7 +8,7 @@ from logs_page import render_logs_page
 import logging
 import os
 
-SPA_DEV_DOMAIN = 'http://localhost:5173'
+MAX_WEBSOCKET_CONNECTIONS = 3
 
 async def http_handler(request: web.Request):
     return web.Response(text=DASH_PAGE_HTML, content_type='text/html')
@@ -25,19 +25,6 @@ def file_response(file_path: str) -> web.FileResponse:
     response.headers.setdefault('Cache-Control', 'max-age=3600')
     return response
 
-async def spa_dev_reverse_proxy(request: web.Request):
-    if request.path == '/spa':
-        path = '/'
-    else:
-        path = request.path
-    async with ClientSession() as session:
-        async with session.get(SPA_DEV_DOMAIN + path) as resp:
-            return web.Response(
-                status=resp.status, 
-                text=await resp.text(),
-                headers=resp.headers
-            )
-
 def get_file_serve_handler(file_path: str):
     async def file_serve_handler(request: web.Request):
         return file_response(file_path)
@@ -45,18 +32,22 @@ def get_file_serve_handler(file_path: str):
 
 async def websocket_handler(request: web.Request):
     logger = logging.getLogger('greybike')
-    logger.info('Websocket connection')
+    logger.info('New websocket connection')
+    state: AppState = request.app['state']
+    if len(state.websockets) > MAX_WEBSOCKET_CONNECTIONS:
+        msg = f'Too many websocket connections: {len(state.websockets)}'
+        logger.warning(msg)
+        return web.Response(text=msg, status=400)
     ws = web.WebSocketResponse(timeout=WS_TIMEOUT)
     await ws.prepare(request)
-    state: AppState = request.app['state']
     state.websockets.append(ws)
     try:
         async for msg in ws:
             logger.debug(f'Websocket message {msg}')
     finally:
+        await ws.close()
         state.websockets.remove(ws)
-    logger.info('Websocket connection closed')
-    await ws.close()
+        logger.info('Websocket connection closed')
     return ws
 
 async def spa_asset_handler(request: web.Request):

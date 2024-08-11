@@ -31,6 +31,17 @@ enum TelemetryRecordFields {
 
 export type TelemetryRecord = { [key in TelemetryRecordFields]: number }
 
+export type SystemRecord = {
+    cpu_temp: number,
+    cpu_usage: number,
+}
+
+export type GNSSRecord = {
+    latitude: number,
+    longitude: number,
+    altitude: number,
+}
+
 export const PARAM_OPTIONS: { [key in TelemetryRecordFields]: ParamData} = {
     'amper_hours': {'name': 'Amper Hours', 'unit': 'Ah'},
     'human_torque': {'name': 'Human Torque', 'unit': 'Nm', 'treshold': 1},

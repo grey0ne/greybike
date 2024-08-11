@@ -1,5 +1,5 @@
 import { createContext, useState, useRef, useEffect, PropsWithChildren } from "react"
-import { TelemetryRecord } from "./types"
+import { TelemetryRecord, SystemRecord, MessageType, GNSSRecord } from "./types"
 
 type WebSocketData = {
     isConnected: boolean,
@@ -15,23 +15,39 @@ type WebSocketProviderProps = {
 export const WebSocketProvider = (props: PropsWithChildren<WebSocketProviderProps>) => {
     const [isConnected, setIsConnected] = useState(false)
     const [telemetry, setTelemetry] = useState<TelemetryRecord[]>([])
+    const [systemRecords, setSystemRecords] = useState<SystemRecord[]>([]);
+    const [gnssRecords, setGnssRecords] = useState<GNSSRecord[]>([]);
     const { wsUrl } = props;
 
     const connection = useRef<WebSocket>(null);
 
     useEffect(() => {
-        const ws = new WebSocket(wsUrl);
+        if (!connection.current) {
+            console.log("Creating new websocket connection");
+            connection.current = new WebSocket(wsUrl);
+        }
+        const ws = connection.current;
   
         ws.addEventListener("open", () => {
             setIsConnected(true);
-            console.log("Websocket connected")
         })
         ws.addEventListener("message", (event) => {
-            setTelemetry((prevTelemetry) => {
-                const newTelemetry = JSON.parse(event.data);
-                console.log(newTelemetry);
-                return [...prevTelemetry ];
-            });
+            const messageData = JSON.parse(event.data);
+            if (messageData.type === MessageType.TELEMETRY) {
+                setTelemetry((prevTelemetry) => {
+                    return [...prevTelemetry, messageData.data];
+                });
+            }
+            if (messageData.type === MessageType.SYSTEM) {
+                setSystemRecords((prevSystemState) => {
+                    return [...prevSystemState, messageData.data];
+                });
+            }
+            if (messageData.type === MessageType.GNSS) {
+                setGnssRecords((prevGnssState) => {
+                    return [...prevGnssState, messageData.data]
+                })
+            }
         })
         ws.addEventListener("error", (error) => {
             console.error('Socket encountered error: ', error);
@@ -47,7 +63,9 @@ export const WebSocketProvider = (props: PropsWithChildren<WebSocketProviderProp
 
     const ret = {
         isConnected,
-        telemetry: telemetry
+        telemetry: telemetry,
+        systemRecords: systemRecords,
+        gnssRecords: gnssRecords
     }
 
     return (

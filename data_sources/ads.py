@@ -33,25 +33,25 @@ def calculate_temp_from_voltage(thermistor_voltage: float, reference_voltage: fl
 def sf(value: float) -> str:
     return "{:.4f}".format(value)
 
-def debug_voltages(cur: float, vol: float, ref: float, therm: float):
-    print("Cur:", sf(cur), "V:", sf(vol), "Ref:", sf(ref), "Therm:", sf(therm))
+def debug_voltages(cur: float, vol: float, therm: float):
+    print("Cur:", sf(cur), "V:", sf(vol), "Therm:", sf(therm))
 
 
 def electric_record_from_ads(ads: ADS.ADS1115) -> ElectricalRecord:
     logger = logging.getLogger('greybike')
     current_channel = AnalogIn(ads, ADS.P0) # ACS712 20A sensor connected to A0. Measures current flowing to the bike's electronics
-    voltage_channel = AnalogIn(ads, ADS.P1) # Voltage divider connected to A1. Measures battery voltage
-    reference_voltage_channel = AnalogIn(ads, ADS.P2) # Voltage divider connected to A2. Should have halved main voltage
-    thermistor_channel = AnalogIn(ads, ADS.P3) # 10K Thermistor with 10K resistor
+    thermistor_channel = AnalogIn(ads, ADS.P1) # 10K Thermistor with 10K resistor
+    voltage_channel = AnalogIn(ads, ADS.P2, ADS.P3)
+    #voltage_channel = AnalogIn(ads, ADS.P1) # Voltage divider connected to A1. Measures battery voltage
+    #reference_voltage_channel = AnalogIn(ads, ADS.P2) # Voltage divider connected to A2. Should have halved main voltage
     try:
-        temp = calculate_temp_from_voltage(thermistor_channel.voltage, reference_voltage_channel.voltage)
+        temp = calculate_temp_from_voltage(thermistor_channel.voltage, BASE_VOLTAGE)
     except ValueError:
         logger.error('Error calculating temp')
         temp = None
 
-    debug_voltages(current_channel.voltage, voltage_channel.voltage, reference_voltage_channel.voltage, thermistor_channel.voltage)
+    debug_voltages(current_channel.voltage, voltage_channel.voltage, thermistor_channel.voltage)
 
-    base_voltage = reference_voltage_channel.voltage
     amps = (BASE_VOLTAGE - current_channel.voltage) / AMP_CONVERSION_CF
     battery_voltage = voltage_channel.voltage * VOLTAGE_DIVIDER_CF
     return ElectricalRecord(

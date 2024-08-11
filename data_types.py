@@ -97,7 +97,7 @@ class ElectricalRecord(BaseRecord):
     """
     current: float
     voltage: float
-    temp: float | None
+    temp: float | None = None
     timestamp: float = field(default_factory=get_current_timestamp)
 
 

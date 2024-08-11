@@ -4,7 +4,6 @@ except:
     board = None
 import busio # type: ignore Library does not have proper typing
 import adafruit_ads1x15.ads1115 as ADS
-from datetime import datetime
 from adafruit_ads1x15.analog_in import AnalogIn
 from data_types import ElectricalRecord
 from utils import get_random_value
@@ -62,7 +61,6 @@ def electric_record_from_ads(ads: ADS.ADS1115) -> ElectricalRecord:
 
 def electric_record_from_random(previous: ElectricalRecord | None) -> ElectricalRecord:
     return ElectricalRecord(
-        timestamp=datetime.timestamp(datetime.now()),
         current=get_random_value(0, 5, 0.05, previous and previous.current),
         voltage=get_random_value(38, 55, 0.1, previous and previous.voltage)
     )

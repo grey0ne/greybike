@@ -1,5 +1,7 @@
 import os
+import logging
 from typing import Any
+from logging import LogRecord
 
 DEV_MODE = os.environ.get('DEV_MODE', 'false').lower() == 'true'
 SERVER_PORT = int(os.environ.get('PORT', 8080))
@@ -50,17 +52,40 @@ ROUTER_HOSTNAME = os.environ.get('ROUTER_HOSTNAME', 'router.grey')
 with open(MANIFEST_FILE) as manifest_file:
     MANIFEST = manifest_file.read()
 
+class ColoredFormatter(logging.Formatter):
+
+    grey = "\x1b[38;20m"
+    blue = "\x1b[38;5;39m"
+    yellow = "\x1b[33;20m"
+    red = "\x1b[31;20m"
+    bold_red = "\x1b[31;1m"
+    reset = "\x1b[0m"
+    format_template = "%(asctime)s %(message)s"
+
+    FORMATS: dict[int, str] = {
+        logging.DEBUG: grey + format_template + reset,
+        logging.INFO: blue + format_template + reset,
+        logging.WARNING: yellow + format_template + reset,
+        logging.ERROR: red + format_template + reset,
+        logging.CRITICAL: bold_red + format_template + reset
+    }
+
+    def format(self, record: LogRecord):
+        log_fmt = self.FORMATS.get(record.levelno)
+        formatter = logging.Formatter(log_fmt)
+        return formatter.format(record)
+
 LOGGING_CONFIG: dict[str, Any] = {
     'version': 1,
     'formatters': {
         'timestamp': {
-            'format': '%(asctime)s %(message)s',
+            '()': ColoredFormatter,
         }
     },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
-            'formatter': 'timestamp'
+            'formatter': 'timestamp',
         },
         'file': {
             'class': 'logging.FileHandler',
@@ -69,7 +94,12 @@ LOGGING_CONFIG: dict[str, Any] = {
             'formatter': 'timestamp'
         }
     },
-    'loggers': {}
+    'loggers': {
+        'root': {
+            'level': 'DEBUG',
+            'handlers': ['console']
+        }
+    }
 }
 if DEV_MODE:
     LOGGING_CONFIG['loggers']['greybike'] = {

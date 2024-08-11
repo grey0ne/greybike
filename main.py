@@ -7,8 +7,14 @@ import logging.config
 
 from aiohttp import web
 
-from data_sources.cycle_analyst import ca_record_from_hardware_serial, ca_record_from_random, get_ca_hardware_serial
-from data_sources.ads import electric_record_from_ads, get_ads_interface, get_i2c_interface, electric_record_from_random
+from data_sources.cycle_analyst import (
+    ca_record_from_hardware_serial, ca_record_from_random, get_ca_hardware_serial,
+    ca_record_from_software_serial, get_ca_software_serial, 
+)
+from data_sources.software_serial import close_software_serial
+from data_sources.ads import (
+    electric_record_from_ads, get_ads_interface, get_i2c_interface, electric_record_from_random
+)
 from data_sources.gnss import gnss_from_serial, gnss_from_random, get_gnss_serial
 from constants import (
     TELEMETRY_LOG_DIRECTORY, LOGGING_CONFIG, DEV_MODE, SPA_HTML_FILE,
@@ -60,8 +66,11 @@ def read_ca_telemetry_record(state: AppState) -> CATelemetryRecord | None:
         last_record = get_last_record(state.ca_telemetry_records)
         return ca_record_from_random(last_record)
     else:
-        if state.ca_serial is not None:
-            return ca_record_from_hardware_serial(state.ca_serial)
+        if state.ca_hardware_serial is not None:
+            return ca_record_from_hardware_serial(state.ca_hardware_serial)
+        if state.ca_software_serial is not None:
+            return ca_record_from_software_serial(state.ca_software_serial)
+
 
 
 async def ca_telemetry_read_task(state: AppState):
@@ -119,8 +128,10 @@ async def electric_telemetry_send_task(state: AppState):
 
 async def on_shutdown(app: web.Application):
     state: AppState = app['state']
-    if state.ca_serial is not None:
-        state.ca_serial.close()
+    if state.ca_hardware_serial is not None:
+        state.ca_hardware_serial.close()
+    if state.ca_software_serial is not None:
+        close_software_serial(state.ca_software_serial)
     if state.gnss_serial is not None:
         state.gnss_serial.close()
     if state.log_file is not None:
@@ -183,7 +194,8 @@ def init():
     state = AppState(log_files=get_all_log_files())
     app['state'] = state
     if not DEV_MODE:
-        state.ca_serial = get_ca_hardware_serial()
+        state.ca_hardware_serial = get_ca_hardware_serial()
+        state.ca_software_serial = get_ca_software_serial()
         state.i2c = get_i2c_interface()
         if state.i2c is not None:
             state.ads = get_ads_interface(state.i2c)

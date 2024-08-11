@@ -19,7 +19,7 @@ export const WebSocketProvider = (props: PropsWithChildren<WebSocketProviderProp
     const [gnssRecords, setGnssRecords] = useState<GNSSRecord[]>([]);
     const { wsUrl } = props;
 
-    const connection = useRef<WebSocket>(null);
+    const connection = useRef<WebSocket | null>(null);
 
     useEffect(() => {
         if (!connection.current) {
@@ -50,8 +50,7 @@ export const WebSocketProvider = (props: PropsWithChildren<WebSocketProviderProp
             }
         })
         ws.addEventListener("error", (error) => {
-            console.error('Socket encountered error: ', error);
-            console.error('Socket encountered error. Closing socket');
+            console.error('Socket encountered error. Closing socket', error);
             if (connection.current) {
                 connection.current.close();
             }

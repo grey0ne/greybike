@@ -112,6 +112,12 @@ class TaskData:
 
 
 @dataclass
+class SoftwareSerial:
+    interface: pigpio.pi
+    pin_number: int
+
+
+@dataclass
 class AppState:
     log_file: TextIO | None = None
     log_start_time: datetime | None = None
@@ -119,7 +125,8 @@ class AppState:
     log_files: list[str] = field(default_factory=lambda: [])
     tasks: list[TaskData] = field(default_factory=lambda: [])
     websockets: list[web.WebSocketResponse] = field(default_factory=lambda: [])
-    ca_serial: Serial | None = None
+    ca_hardware_serial: Serial | None = None
+    ca_software_serial: SoftwareSerial | None = None
     gnss_serial: Serial | None = None
     ads: ADS.ADS1115 | None = None
     i2c: busio.I2C | None = None
@@ -135,9 +142,3 @@ class AppState:
     system_telemetry_records: deque[SystemTelemetryRecord] = field(
         default_factory=lambda: deque(maxlen=SYSTEM_TELEMETRY_BUFFER_SIZE)
     )
-
-@dataclass
-class SoftwareSerial:
-    interface: pigpio.pi
-    pin_number: int
-

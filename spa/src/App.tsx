@@ -3,7 +3,7 @@ import { WebSocketProvider } from './WebSocketContext'
 
 function App() {
     return (
-        <WebSocketProvider wsUrl={`ws://localhost:8080/ws`}>
+        <WebSocketProvider wsUrl={`/ws`}>
             <Dash />
         </WebSocketProvider>
     )

@@ -1,4 +1,4 @@
-from aiohttp import web
+from aiohttp import web, ClientSession
 
 from telemetry_logs import reset_log
 from dash_page import DASH_PAGE_HTML
@@ -7,6 +7,8 @@ from data_types import AppState
 from logs_page import render_logs_page
 import logging
 import os
+
+SPA_DEV_DOMAIN = 'http://localhost:5173'
 
 async def http_handler(request: web.Request):
     return web.Response(text=DASH_PAGE_HTML, content_type='text/html')
@@ -23,6 +25,19 @@ def file_response(file_path: str) -> web.FileResponse:
     response.headers.setdefault('Cache-Control', 'max-age=3600')
     return response
 
+async def spa_dev_reverse_proxy(request: web.Request):
+    if request.path == '/spa':
+        path = '/'
+    else:
+        path = request.path
+    async with ClientSession() as session:
+        async with session.get(SPA_DEV_DOMAIN + path) as resp:
+            return web.Response(
+                status=resp.status, 
+                text=await resp.text(),
+                headers=resp.headers
+            )
+
 def get_file_serve_handler(file_path: str):
     async def file_serve_handler(request: web.Request):
         return file_response(file_path)
@@ -30,6 +45,7 @@ def get_file_serve_handler(file_path: str):
 
 async def websocket_handler(request: web.Request):
     logger = logging.getLogger('greybike')
+    logger.info('Websocket connection')
     ws = web.WebSocketResponse(timeout=WS_TIMEOUT)
     await ws.prepare(request)
     state: AppState = request.app['state']
@@ -39,6 +55,8 @@ async def websocket_handler(request: web.Request):
             logger.debug(f'Websocket message {msg}')
     finally:
         state.websockets.remove(ws)
+    logger.info('Websocket connection closed')
+    await ws.close()
     return ws
 
 async def spa_asset_handler(request: web.Request):

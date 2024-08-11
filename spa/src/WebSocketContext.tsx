@@ -15,32 +15,35 @@ type WebSocketProviderProps = {
 export const WebSocketProvider = (props: PropsWithChildren<WebSocketProviderProps>) => {
     const [isConnected, setIsConnected] = useState(false)
     const [telemetry, setTelemetry] = useState<TelemetryRecord[]>([])
+    const { wsUrl } = props;
 
-    const connection = useRef<any>(null);
+    const connection = useRef<WebSocket>(null);
 
     useEffect(() => {
-        const ws = new WebSocket(props.wsUrl);
+        const ws = new WebSocket(wsUrl);
   
         ws.addEventListener("open", () => {
             setIsConnected(true);
             console.log("Websocket connected")
         })
         ws.addEventListener("message", (event) => {
-            console.log("Message from server ", event.data)
             setTelemetry((prevTelemetry) => {
                 const newTelemetry = JSON.parse(event.data);
-                return [...prevTelemetry, newTelemetry];
+                console.log(newTelemetry);
+                return [...prevTelemetry ];
             });
         })
-        ws.addEventListener("error", () => {
+        ws.addEventListener("error", (error) => {
+            console.error('Socket encountered error: ', error);
             console.error('Socket encountered error. Closing socket');
-            connection.current.close();
+            if (connection.current) {
+                connection.current.close();
+            }
             setIsConnected(false);
         });
 
-        connection.current = ws;
-        return () => connection.current.close()
-    }, []);
+        return;
+    }, [wsUrl]);
 
     const ret = {
         isConnected,

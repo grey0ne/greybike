@@ -15,5 +15,5 @@ def test_ads_sensor():
         if ads is not None:
             record = electric_record_from_ads(ads)
             power = record.current * record.voltage
-            print(f"Voltage: {rd(record.voltage)} Amps: {rd(record.current)} Watts: {rd(power)} Temp: {rd(record.temp | 0)}")
+            print(f"Voltage: {rd(record.voltage)} Amps: {rd(record.current)} Watts: {rd(power)} Temp: {rd(record.temp)}")
         time.sleep(0.2)

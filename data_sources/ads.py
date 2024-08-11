@@ -15,6 +15,7 @@ import math
 AMP_CONVERSION_CF = 0.185 # ACS712 5A coefficient (185mv/A)
 
 VOLTAGE_DIVIDER_CF = 21.7 # 200kOhm / 10kOhm voltage divider. And some further calubration
+BASE_VOLTAGE = 2.4755
 
 NOMINAL_TEMP = 25
 THERMISTOR_CF = 3950
@@ -29,19 +30,32 @@ def calculate_temp_from_voltage(thermistor_voltage: float, reference_voltage: fl
     temp = 1 / (math.log(thermistor_resistance/THERMISTOR_R) / THERMISTOR_CF + 1 / (NOMINAL_TEMP + TEMP_CF)) - TEMP_CF
     return temp
 
+def sf(value: float) -> str:
+    return "{:.4f}".format(value)
+
+def debug_voltages(cur: float, vol: float, ref: float, therm: float):
+    print("Cur:", sf(cur), "V:", sf(vol), "Ref:", sf(ref), "Therm:", sf(therm))
+
 
 def electric_record_from_ads(ads: ADS.ADS1115) -> ElectricalRecord:
+    logger = logging.getLogger('greybike')
     current_channel = AnalogIn(ads, ADS.P0) # ACS712 20A sensor connected to A0. Measures current flowing to the bike's electronics
     voltage_channel = AnalogIn(ads, ADS.P1) # Voltage divider connected to A1. Measures battery voltage
     reference_voltage_channel = AnalogIn(ads, ADS.P2) # Voltage divider connected to A2. Should have halved main voltage
     thermistor_channel = AnalogIn(ads, ADS.P3) # 10K Thermistor with 10K resistor
-    temp = calculate_temp_from_voltage(thermistor_channel.voltage, reference_voltage_channel.voltage)
-    print("Temp: ", temp)
+    try:
+        temp = calculate_temp_from_voltage(thermistor_channel.voltage, reference_voltage_channel.voltage)
+    except ValueError:
+        logger.error('Error calculating temp')
+        temp = None
+
+    debug_voltages(current_channel.voltage, voltage_channel.voltage, reference_voltage_channel.voltage, thermistor_channel.voltage)
+
     base_voltage = reference_voltage_channel.voltage
-    amps = (base_voltage - current_channel.voltage) / AMP_CONVERSION_CF
+    amps = (BASE_VOLTAGE - current_channel.voltage) / AMP_CONVERSION_CF
     battery_voltage = voltage_channel.voltage * VOLTAGE_DIVIDER_CF
     return ElectricalRecord(
-        timestamp=datetime.timestamp(datetime.now()),
+        temp=temp,
         current=amps,
         voltage=battery_voltage
     )
@@ -62,4 +76,6 @@ def get_i2c_interface() -> busio.I2C | None:
     return i2c
 
 def get_ads_interface(i2c: busio.I2C) -> ADS.ADS1115 | None:
-    return ADS.ADS1115(i2c)
+    ads = ADS.ADS1115(i2c)
+    ads.gain = 1 # maximum measuring range of 6.144V
+    return ads

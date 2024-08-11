@@ -11,30 +11,34 @@ CA_LINE_VALUES_COUNT = 14
 
 def parse_telemetry_line(line: str) -> CATelemetryRecord | None:
     logger = logging.getLogger('greybike')
-    values = line.replace('\r\n', '').split('\t')
+    values = line.replace('\r', '').replace('\n', '').split('\t')
     if len(values) != CA_LINE_VALUES_COUNT:
-        logger.error(f'Incorrect number of values in serial line: {len(values)} expected {CA_LINE_VALUES_COUNT}')
+        logger.debug(f'Incorrect number of values in serial line: {len(values)} expected {CA_LINE_VALUES_COUNT}. Line {values}')
         return None
     flags = values[13]
-    return CATelemetryRecord(
-        timestamp=datetime.timestamp(datetime.now()),
-        amper_hours=float(values[0]),
-        voltage=float(values[1]),
-        current=float(values[2]),
-        speed=float(values[3]),
-        trip_distance=float(values[4]),
-        motor_temp=float(values[5]),
-        pedal_rpm=float(values[6]),
-        human_watts=float(values[7]),
-        human_torque=float(values[8]),
-        throttle_input=float(values[9]),
-        throttle_output=float(values[10]),
-        aux_a=float(values[11]),
-        aux_d=float(values[12]),
-        flags=flags,
-        mode=int(flags[0]),
-        is_brake_pressed='B' in flags
-    )
+    try:
+        return CATelemetryRecord(
+            timestamp=datetime.timestamp(datetime.now()),
+            amper_hours=float(values[0]),
+            voltage=float(values[1]),
+            current=float(values[2]),
+            speed=float(values[3]),
+            trip_distance=float(values[4]),
+            motor_temp=float(values[5]),
+            pedal_rpm=float(values[6]),
+            human_watts=float(values[7]),
+            human_torque=float(values[8]),
+            throttle_input=float(values[9]),
+            throttle_output=float(values[10]),
+            aux_a=float(values[11]),
+            aux_d=float(values[12]),
+            flags=flags,
+            mode=int(flags[0]),
+            is_brake_pressed='B' in flags
+        )
+    except ValueError:
+        logger.debug(f'Incorrect data in serial line: {len(values)} expected {CA_LINE_VALUES_COUNT}. Line {values}')
+        return None
 
 
 def ca_record_from_hardware_serial(ser: serial.Serial) -> CATelemetryRecord | None:

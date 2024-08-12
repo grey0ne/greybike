@@ -22,11 +22,11 @@ from constants import (
     ELECTRIC_RECORD_READ_INTERVAL, ELECTRIC_RECORD_SEND_INTERVAL,
     GNSS_READ_INTERVAL, GNSS_SEND_INTERVAL, FAVICON_DIRECTORY, JS_DIRECTORY,
     SYSTEM_PARAMS_READ_INTERVAL, SYSTEM_PARAMS_SEND_INTERVAL, 
-    APP_LOG_DIRECTORY, PING_INTERVAL, SERVER_PORT
+    APP_LOG_DIRECTORY, PING_INTERVAL, SERVER_PORT, MANIFEST_FILE
 )
 from utils import check_running_on_pi, get_last_record, send_ws_message
 from handlers import (
-    http_handler, websocket_handler, manifest_handler, spa_asset_handler,
+    dash_page_handler, websocket_handler, spa_asset_handler,
     reset_log_handler, get_file_serve_handler, log_list_handler
 )
 from data_types import AppState, CATelemetryRecord, MessageType, SystemTelemetryRecord
@@ -168,9 +168,9 @@ def get_all_log_files():
 
 def setup_routes(app: web.Application):
     app.add_routes([
-        web.get('/',   http_handler),
+        web.get('/',   dash_page_handler),
         web.get('/ws', websocket_handler),
-        web.get('/manifest.json', manifest_handler),
+        web.get('/manifest.json', get_file_serve_handler(MANIFEST_FILE)),
         web.get('/assets/{file}', spa_asset_handler),
         web.get('/chart.js', get_file_serve_handler(f'{JS_DIRECTORY}/chart.js')),
         web.get('/logs', log_list_handler),

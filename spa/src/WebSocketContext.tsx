@@ -57,7 +57,9 @@ export const WebSocketProvider = (props: PropsWithChildren<WebSocketProviderProp
             setIsConnected(false);
         });
 
-        return;
+        return () => {
+            ws.close()
+        }
     }, [wsUrl]);
 
     const ret = {

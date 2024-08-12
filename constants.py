@@ -28,7 +28,7 @@ ELECTRIC_RECORD_BUFFER_SIZE = 10
 GNSS_BUFFER_SIZE = 10
 
 # All intervals are in seconds
-CA_TELEMETRY_READ_INTERVAL = 0.09
+CA_TELEMETRY_READ_INTERVAL = 0.25
 CA_TELEMETRY_LOG_INTERVAL = 0.1
 CA_TELEMETRY_SEND_INTERVAL = 0.1
 CA_SERIAL_BAUD_RATE = 9600
@@ -48,9 +48,6 @@ SERIAL_TIMEOUT = 0.05 # In seconds
 WS_TIMEOUT = 0.1 # in seconds
 PING_TIMEOUT = 1 # In seconds
 ROUTER_HOSTNAME = os.environ.get('ROUTER_HOSTNAME', 'router.grey')
-
-with open(MANIFEST_FILE) as manifest_file:
-    MANIFEST = manifest_file.read()
 
 class ColoredFormatter(logging.Formatter):
 

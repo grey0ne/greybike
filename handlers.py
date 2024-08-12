@@ -2,7 +2,7 @@ from aiohttp import web
 
 from telemetry_logs import reset_log
 from dash_page import DASH_PAGE_HTML
-from constants import MANIFEST, WS_TIMEOUT, SPA_ASSETS_DIR
+from constants import WS_TIMEOUT, SPA_ASSETS_DIR
 from data_types import AppState
 from logs_page import render_logs_page
 import logging
@@ -10,17 +10,15 @@ import os
 
 MAX_WEBSOCKET_CONNECTIONS = 3
 
-async def http_handler(request: web.Request):
+async def dash_page_handler(request: web.Request):
     return web.Response(text=DASH_PAGE_HTML, content_type='text/html')
-
-async def manifest_handler(request: web.Request):
-    return web.Response(text=MANIFEST, content_type='application/json')
 
 async def reset_log_handler(request: web.Request):
     reset_log(request.app['state'])
     return web.Response(text='Log file reset')
 
 def file_response(file_path: str) -> web.FileResponse:
+    # TODO add in memory cache. read file in memory and store it in dict or something
     response = web.FileResponse(file_path)
     response.headers.setdefault('Cache-Control', 'max-age=3600')
     return response

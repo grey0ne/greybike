@@ -22,6 +22,7 @@ Run
 Install service
 ```bash
 ./install_service.sh
+sudo systemctl enable pigpiod
 ```
 
 Script for running commands

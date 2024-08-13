@@ -11,6 +11,14 @@ export const WebSocketContext = createContext<WebSocketData | null>(null)
 type WebSocketProviderProps = {
     wsUrl: string
 }
+const LOGS_LEN = 40;
+
+function rotateElems<T>(elems: T[], newElem: T): T[] {
+    if (elems.length >= LOGS_LEN) {
+        elems.splice(0, 1);
+    }
+    return [...elems, newElem];
+}
 
 export const WebSocketProvider = (props: PropsWithChildren<WebSocketProviderProps>) => {
     const [isConnected, setIsConnected] = useState(false)
@@ -35,17 +43,17 @@ export const WebSocketProvider = (props: PropsWithChildren<WebSocketProviderProp
             const messageData = JSON.parse(event.data);
             if (messageData.type === MessageType.TELEMETRY) {
                 setTelemetry((prevTelemetry) => {
-                    return [...prevTelemetry, messageData.data];
+                    return rotateElems(prevTelemetry, messageData.data);
                 });
             }
             if (messageData.type === MessageType.SYSTEM) {
                 setSystemRecords((prevSystemState) => {
-                    return [...prevSystemState, messageData.data];
+                    return rotateElems(prevSystemState, messageData.data);
                 });
             }
             if (messageData.type === MessageType.GNSS) {
                 setGnssRecords((prevGnssState) => {
-                    return [...prevGnssState, messageData.data]
+                    return rotateElems(prevGnssState, messageData.data);
                 })
             }
         })
@@ -57,9 +65,7 @@ export const WebSocketProvider = (props: PropsWithChildren<WebSocketProviderProp
             setIsConnected(false);
         });
 
-        return () => {
-            ws.close()
-        }
+        return
     }, [wsUrl]);
 
     const ret = {

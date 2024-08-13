@@ -1,5 +1,6 @@
 import './Dash.css';
 import { useContext } from 'react';
+import { LineChart } from '@mui/x-charts/LineChart';
 import { WebSocketContext } from './WebSocketContext';
 import { PARAM_OPTIONS } from './types';
 import { enumKeys } from './utils';
@@ -31,6 +32,8 @@ export default function Dash() {
             }
         }
     }
+    const xAxis = socketData?.telemetry.map((_, i) => i) || [];
+    const chartData = socketData?.telemetry.map((t) => t.voltage) || [];
     return (
         <>
             <div id="telemetry-params">
@@ -41,7 +44,16 @@ export default function Dash() {
             </div>
 
             <div style={{width: "100%"}}>
-                <canvas id="myChart"></canvas>
+                <LineChart
+                    xAxis={[{ data: xAxis }]}
+                    series={[
+                        {
+                        data: chartData,
+                        },
+                    ]}
+                    width={500}
+                    height={300}
+                />
             </div>
 
             <div className="row" style={{justifyContent: "space-around"}}>

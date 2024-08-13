@@ -10,7 +10,8 @@ function ParamContainer({ name, value, unit }: { name: string, value: number, un
     return (
         <div className="param-container">
             <div>
-                <span className="param-value">{value}</span>
+                <span className="param-value">{value.toFixed(2)}</span>
+                &nbsp;
                 <span className="param-unit">{unit}</span>
             </div>
             <div>{name}</div>
@@ -48,10 +49,11 @@ export default function Dash() {
                     xAxis={[{ data: xAxis }]}
                     series={[
                         {
-                        data: chartData,
+                            data: chartData,
+                            showMark: false,
                         },
                     ]}
-                    width={500}
+                    width={700}
                     height={300}
                 />
             </div>

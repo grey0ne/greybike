@@ -11,10 +11,24 @@ export const WebSocketContext = createContext<WebSocketData | null>(null)
 type WebSocketProviderProps = {
     wsUrl: string
 }
-const LOGS_LEN = 40;
 
-function rotateElems<T>(elems: T[], newElem: T): T[] {
-    if (elems.length >= LOGS_LEN) {
+const LOGS_DURATION = 100;
+const CHART_INTERVAL = 1; // In seconds
+
+interface Timestamped {
+    timestamp: number
+}
+
+
+function rotateElems<T extends Timestamped>(elems: T[], newElem: T): T[] {
+    console.log(newElem.timestamp);
+    const lastElem = elems[elems.length - 1];
+    if (lastElem && newElem.timestamp - lastElem.timestamp < CHART_INTERVAL) {
+        //TODO average values instead of replacing
+        newElem.timestamp = lastElem.timestamp;
+        elems.splice(-1, 1);
+    }
+    if (elems.length >= LOGS_DURATION) {
         elems.splice(0, 1);
     }
     return [...elems, newElem];

@@ -64,7 +64,7 @@ def ca_record_from_software_serial(ser: SoftwareSerial) -> CATelemetryRecord | N
     return parsed_line
 
 def ca_record_from_random(previous: CATelemetryRecord | None) -> CATelemetryRecord:
-    return CATelemetryRecord(
+    record = CATelemetryRecord(
         amper_hours=get_random_value(0, 10, 0.01, previous and previous.amper_hours),
         voltage=get_random_value(35, 55, 0.1, previous and previous.voltage),
         current=get_random_value(0, 25, 1, previous and previous.current),
@@ -82,6 +82,7 @@ def ca_record_from_random(previous: CATelemetryRecord | None) -> CATelemetryReco
         mode=1,
         is_brake_pressed=False
     )
+    return record
 
 def get_ca_hardware_serial() -> serial.Serial | None:
     logger = logging.getLogger('greybike')

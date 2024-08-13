@@ -22,6 +22,7 @@ export type ParamData = {
 }
 
 enum TelemetryRecordFields {
+    timestamp = 'timestamp',
     amper_hours = 'amper_hours',
     human_torque = 'human_torque',
     human_watts = 'human_watts',
@@ -48,4 +49,5 @@ export const PARAM_OPTIONS: { [key in TelemetryRecordFields]: ParamData} = {
     'human_watts': {'name': 'Human', 'unit': 'W'},
     'voltage': {'name': 'Voltage', 'unit': 'V'},
     'current': {'name': 'Current', 'unit': 'A'},
+    'timestamp': {'name': 'Time', 'unit': 's'},
 }

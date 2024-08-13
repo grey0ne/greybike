@@ -17,13 +17,14 @@ async def send_ws_message(state: AppState, message_type: MessageType, data: dict
     for ws in state.websockets:
         await ws.send_str(message_str)
 
+RANDOM_CHANGE_FREQUENCY = 5
 
 def get_random_value(from_: float, to_: float, step:float, previous: float | None) -> float:
     """
         Generate random values for development purposes
     """
     if previous is not None:
-        if random.uniform(0, 10) < 1:
+        if random.uniform(0, RANDOM_CHANGE_FREQUENCY) < 1:
             result = previous + random.uniform(-step, step)
             if result < from_:
                 result = from_
@@ -33,7 +34,7 @@ def get_random_value(from_: float, to_: float, step:float, previous: float | Non
             result = previous
     else:
         result = random.uniform(from_, to_)
-    return round(result, 2)
+    return round(result, 4)
 
 RecordType = TypeVar('RecordType', bound=BaseRecord)
 

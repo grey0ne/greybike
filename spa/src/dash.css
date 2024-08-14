@@ -26,20 +26,13 @@
     font-family: system-ui;
     max-width: 400px;
 }
-.row {
-    margin: 10px 0;
-    display: flex;
-    justify-content: center;
-}
-.row-elem {
-    flex-grow: 1;
-    margin: 0 4px;
-}
 .param-container {
-    height: 100px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+}
+.param-name {
+    font-size: 24px;
 }
 
 @media (max-width: 600px) {

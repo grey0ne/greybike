@@ -3,6 +3,7 @@ import { useContext, useState } from 'react';
 import { LineChart } from '@mui/x-charts/LineChart';
 import { WebSocketContext } from './WebSocketContext';
 import { PARAM_OPTIONS, TelemetryRecordFields, DashMode, DashModeConfigs } from './types';
+import { Button, Stack, Grid } from '@mui/material';
 import { enumKeys } from './utils';
 import { colors } from '@mui/material';
 
@@ -15,13 +16,14 @@ function ParamContainer({ name, value, unit }: { name: string, value: number, un
                 &nbsp;
                 <span className="param-unit">{unit}</span>
             </div>
-            <div>{name}</div>
+            <div className="param-name">{name}</div>
         </div>
     )
 }
 
 enum ChartType {
     power = 'power',
+    speed = 'speed',
 }
 
 
@@ -36,6 +38,10 @@ const ChartTypeMapping: { [key in ChartType]: ChartSettings[]} = {
         {'field': TelemetryRecordFields.power, 'color': colors.red[500],},
         {'field': TelemetryRecordFields.human_watts, 'color': colors.blue[500]},
         {'field': TelemetryRecordFields.regen, 'color': colors.green[500]},
+    ],
+    'speed': [
+        {'field': TelemetryRecordFields.pedal_rpm, 'color': colors.red[500]},
+        {'field': TelemetryRecordFields.speed, 'color': colors.blue[500]},
     ]
 }
 
@@ -56,7 +62,7 @@ function Chart({ chartType }: { chartType: ChartType }) {
         })
     }
     return (
-        <div style={{width: "100%"}}>
+        <div>
             <LineChart
                 xAxis={[{ data: xAxis }]}
                 series={dataSeries}
@@ -84,9 +90,9 @@ function DashParams({ mode }: { mode: DashMode }){
         }
     }
     return (
-        <div id="telemetry-params">
+        <Stack direction='row' spacing={2} justifyContent='space-around' width='100%'>
             { paramElems }
-        </div>
+        </Stack>
     )
 }
 
@@ -108,30 +114,35 @@ export default function Dash() {
     }
     return (
         <>
-            <DashParams mode={mode} />
-            <div className="row">
-                <button id="next-mode-button" className="default-button row-elem">Next Mode</button>
-            </div>
+            <Stack spacing={2} direction='column' alignItems='center' justifyContent='center'>
+                <DashParams mode={mode} />
+                <Stack direction='row' spacing={2}>
+                    <Button variant='contained' onClick={() => setMode(DashMode.POWER)}>Power</Button>
+                    <Button variant='contained' onClick={() => setMode(DashMode.SPEED)}>Speed</Button>
+                </Stack>
 
-            <Chart chartType={chartType} />
+                <Chart chartType={chartType} />
 
-            <div className="row" style={{justifyContent: "space-around"}}>
-                <div>
-                    <span id="log_file">
-                    </span>
-                </div>
-                <div>
-                    <span id="log_duration">
-                    </span>
-                    &nbsp;Seconds
-                </div>
-            </div>
-            <div className="row">
-                <button id="reset-log-button" className="default-button row-elem">Reset log file</button>
-            </div>
-            <div className="row">
-                <a href="/logs" className="default-button row-elem">All Logs</a>
-            </div>
+                <Stack direction='row' spacing={2}>
+                    <div>
+                        <span id="log_file">
+                        </span>
+                    </div>
+                    <div>
+                        <span id="log_duration">
+                        </span>
+                        &nbsp;Seconds
+                    </div>
+                </Stack>
+                <Stack direction='row' spacing={2}>
+                    <Button variant='contained' onClick={() => setChartType(ChartType.power)}>Power</Button>
+                    <Button variant='contained' onClick={() => setChartType(ChartType.speed)}>Speed</Button>
+                </Stack>
+                <Stack direction='row' spacing={2}>
+                    <Button variant='contained'>Reset Log File</Button>
+                    <Button variant='outlined'>All logs</Button>
+                </Stack>
+            </Stack>
         </>
     )
 }

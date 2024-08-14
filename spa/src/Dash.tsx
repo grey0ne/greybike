@@ -2,10 +2,10 @@ import './Dash.css';
 import { useContext, useState } from 'react';
 import { LineChart } from '@mui/x-charts/LineChart';
 import { WebSocketContext } from './WebSocketContext';
-import { PARAM_OPTIONS, TelemetryRecordFields, DashMode, DashModeConfigs } from './types';
-import { Button, Stack, Grid } from '@mui/material';
+import { PARAM_OPTIONS, DashMode, DashModeConfigs, ChartTypeMapping, ChartType } from './types';
+import { Button, Stack } from '@mui/material';
 import { enumKeys } from './utils';
-import { colors } from '@mui/material';
+import { useWakeLock } from './use-wake-lock';
 
 
 function ParamContainer({ name, value, unit }: { name: string, value: number, unit: string }) {
@@ -19,30 +19,6 @@ function ParamContainer({ name, value, unit }: { name: string, value: number, un
             <div className="param-name">{name}</div>
         </div>
     )
-}
-
-enum ChartType {
-    power = 'power',
-    speed = 'speed',
-}
-
-
-type ChartSettings = {
-    field: TelemetryRecordFields,
-    color: string
-}
-
-
-const ChartTypeMapping: { [key in ChartType]: ChartSettings[]} = {
-    'power': [
-        {'field': TelemetryRecordFields.power, 'color': colors.red[500],},
-        {'field': TelemetryRecordFields.human_watts, 'color': colors.blue[500]},
-        {'field': TelemetryRecordFields.regen, 'color': colors.green[500]},
-    ],
-    'speed': [
-        {'field': TelemetryRecordFields.pedal_rpm, 'color': colors.red[500]},
-        {'field': TelemetryRecordFields.speed, 'color': colors.blue[500]},
-    ]
 }
 
 
@@ -103,6 +79,7 @@ export default function Dash() {
     const [mode, setMode] = useState<DashMode>(DashMode.SPEED);
     const [chartType, setChartType] = useState<ChartType>(ChartType.power);
     const socketData = useContext(WebSocketContext);
+    const { release, type: lockType } = useWakeLock();
     const lastTelemetry = socketData?.telemetry[socketData.telemetry.length - 1];
     const paramElems = [];
     if (lastTelemetry) {
@@ -128,6 +105,9 @@ export default function Dash() {
 
                 <Stack direction='row' spacing={2}>
                     <div>
+                        {lockType ? `Wake Lock: ${lockType}` : 'Wake Lock released'}
+                    </div>
+                    <div>
                         <span id="log_file">
                         </span>
                     </div>
@@ -138,6 +118,7 @@ export default function Dash() {
                     </div>
                 </Stack>
                 <Stack direction='row' spacing={2}>
+                    <Button variant='contained' onClick={() => release()}>Release wake lock</Button>
                     <Button variant='contained' onClick={() => setChartType(ChartType.power)}>Power</Button>
                     <Button variant='contained' onClick={() => setChartType(ChartType.speed)}>Speed</Button>
                 </Stack>

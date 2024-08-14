@@ -1,3 +1,5 @@
+import { colors } from '@mui/material';
+
 export enum MessageType {
     TELEMETRY = 'telemetry',
     SYSTEM = 'system',
@@ -67,3 +69,26 @@ export const PARAM_OPTIONS: { [key in TelemetryRecordFields]: ParamData} = {
     'speed': {'name': 'Speed', 'unit': 'km/h'},
     'timestamp': {'name': 'Time', 'unit': 's'},
 }
+
+export enum ChartType {
+    power = 'power',
+    speed = 'speed',
+}
+
+type ChartSettings = {
+    field: TelemetryRecordFields,
+    color: string
+}
+
+export const ChartTypeMapping: { [key in ChartType]: ChartSettings[]} = {
+    'power': [
+        {'field': TelemetryRecordFields.power, 'color': colors.red[500],},
+        {'field': TelemetryRecordFields.human_watts, 'color': colors.blue[500]},
+        {'field': TelemetryRecordFields.regen, 'color': colors.green[500]},
+    ],
+    'speed': [
+        {'field': TelemetryRecordFields.pedal_rpm, 'color': colors.red[500]},
+        {'field': TelemetryRecordFields.speed, 'color': colors.blue[500]},
+    ]
+}
+

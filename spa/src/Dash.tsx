@@ -48,7 +48,8 @@ const ChartTypeMapping: { [key in ChartType]: ChartSettings[]} = {
 
 function Chart({ chartType }: { chartType: ChartType }) {
     const bikeData = useContext(WebSocketContext);
-    const xAxis = bikeData?.telemetry.map((_, i) => i) || [];
+    const telemetryLen = bikeData?.telemetry.length || 0;
+    const xAxis = bikeData?.telemetry.map((_, i) => telemetryLen-i) || [];
     const chartSettings = ChartTypeMapping[chartType];
     const dataSeries = [];
     for  (const chartConf of chartSettings) {
@@ -62,14 +63,16 @@ function Chart({ chartType }: { chartType: ChartType }) {
         })
     }
     return (
-        <div>
+        <Stack sx={{ width: '100%', maxWidth: 1000 }}>
             <LineChart
-                xAxis={[{ data: xAxis }]}
+                xAxis={[{
+                    data: xAxis,
+                    scaleType: 'point',
+                }]}
                 series={dataSeries}
-                width={700}
                 height={300}
             />
-        </div>
+        </Stack>
     )
 }
 

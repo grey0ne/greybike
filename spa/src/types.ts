@@ -9,16 +9,6 @@ export enum MessageType {
 export enum DashMode {
     SPEED = 'speed',
     POWER = 'power',
-    TEMPERATURE = 'temperature',
-    ASSIST = 'assist',
-    ODO = 'odo',
-    SYSTEM = 'system'
-}
-
-export type ParamData = {
-    name: string,
-    unit: string,
-    treshold?: number,
 }
 
 export enum TelemetryRecordFields {
@@ -30,7 +20,27 @@ export enum TelemetryRecordFields {
     current = 'current',
     power = 'power',
     regen = 'regen',
+    pedal_rpm = 'pedal_rpm',
+    speed = 'speed',
 }
+
+export const DashModeConfigs: { [key in DashMode]: { title: string, fields: TelemetryRecordFields[] } } = {
+    'speed': {
+        title: 'Speed',
+        fields: [TelemetryRecordFields.pedal_rpm, TelemetryRecordFields.speed]
+    },
+    'power': {
+        'title': 'Power',
+        'fields': [TelemetryRecordFields.power, TelemetryRecordFields.human_watts, TelemetryRecordFields.regen]
+    }
+}
+
+export type ParamData = {
+    name: string,
+    unit: string,
+    treshold?: number,
+}
+
 
 export type TelemetryRecord = { [key in TelemetryRecordFields]: number }
 
@@ -53,5 +63,7 @@ export const PARAM_OPTIONS: { [key in TelemetryRecordFields]: ParamData} = {
     'current': {'name': 'Current', 'unit': 'A'},
     'power': {'name': 'Power', 'unit': 'W'},
     'regen': {'name': 'Regen', 'unit': 'W'},
+    'pedal_rpm': {'name': 'Pedal RPM', 'unit': 'rpm'},
+    'speed': {'name': 'Speed', 'unit': 'km/h'},
     'timestamp': {'name': 'Time', 'unit': 's'},
 }

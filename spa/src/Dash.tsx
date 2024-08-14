@@ -1,8 +1,8 @@
 import './Dash.css';
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 import { LineChart } from '@mui/x-charts/LineChart';
 import { WebSocketContext } from './WebSocketContext';
-import { PARAM_OPTIONS, TelemetryRecordFields } from './types';
+import { PARAM_OPTIONS, TelemetryRecordFields, DashMode, DashModeConfigs } from './types';
 import { enumKeys } from './utils';
 import { colors } from '@mui/material';
 
@@ -30,6 +30,7 @@ type ChartSettings = {
     color: string
 }
 
+
 const ChartTypeMapping: { [key in ChartType]: ChartSettings[]} = {
     'power': [
         {'field': TelemetryRecordFields.power, 'color': colors.red[500],},
@@ -45,8 +46,11 @@ function Chart({ chartType }: { chartType: ChartType }) {
     const chartSettings = ChartTypeMapping[chartType];
     const dataSeries = [];
     for  (const chartConf of chartSettings) {
+        const param = chartConf.field;
+        const paramData = PARAM_OPTIONS[param];
         dataSeries.push({
-            data: bikeData?.telemetry.map((t) => t[chartConf.field]) || [],
+            label: paramData.name,
+            data: bikeData?.telemetry.map((t) => t[param]) || [],
             showMark: false,
             color: chartConf.color
         })
@@ -63,7 +67,32 @@ function Chart({ chartType }: { chartType: ChartType }) {
     )
 }
 
+
+function DashParams({ mode }: { mode: DashMode }){
+    const socketData = useContext(WebSocketContext);
+    const lastTelemetry = socketData?.telemetry[socketData.telemetry.length - 1];
+    const config = DashModeConfigs[mode];
+    const paramElems = [];
+    if (lastTelemetry) {
+        for (const param of config.fields) {
+            const paramData = PARAM_OPTIONS[param];
+            if (paramData) {
+                paramElems.push(
+                    <ParamContainer key={param} name={paramData.name} value={lastTelemetry[param]} unit={paramData.unit} />
+                )
+            }
+        }
+    }
+    return (
+        <div id="telemetry-params">
+            { paramElems }
+        </div>
+    )
+}
+
 export default function Dash() {
+    const [mode, setMode] = useState<DashMode>(DashMode.SPEED);
+    const [chartType, setChartType] = useState<ChartType>(ChartType.power);
     const socketData = useContext(WebSocketContext);
     const lastTelemetry = socketData?.telemetry[socketData.telemetry.length - 1];
     const paramElems = [];
@@ -79,14 +108,12 @@ export default function Dash() {
     }
     return (
         <>
-            <div id="telemetry-params">
-                { paramElems }
-            </div>
+            <DashParams mode={mode} />
             <div className="row">
                 <button id="next-mode-button" className="default-button row-elem">Next Mode</button>
             </div>
 
-            <Chart chartType={ChartType.power} />
+            <Chart chartType={chartType} />
 
             <div className="row" style={{justifyContent: "space-around"}}>
                 <div>

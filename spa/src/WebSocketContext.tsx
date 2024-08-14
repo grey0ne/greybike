@@ -13,7 +13,7 @@ type WebSocketProviderProps = {
     wsUrl: string
 }
 
-const LOGS_DURATION = 100;
+const LOGS_DURATION = 200;
 const CHART_INTERVAL = 1; // In seconds
 
 interface Timestamped {

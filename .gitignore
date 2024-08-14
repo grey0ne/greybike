@@ -8,3 +8,4 @@ node_modules
 tmp.py
 .DS_Store
 js
+spa/dist

@@ -1,5 +1,6 @@
 import { createContext, useState, useRef, useEffect, PropsWithChildren } from "react"
 import { TelemetryRecord, SystemRecord, MessageType, GNSSRecord } from "./types"
+import { SetStateAction } from "react"
 
 type WebSocketData = {
     isConnected: boolean,
@@ -21,7 +22,6 @@ interface Timestamped {
 
 
 function rotateElems<T extends Timestamped>(elems: T[], newElem: T): T[] {
-    console.log(newElem.timestamp);
     const lastElem = elems[elems.length - 1];
     if (lastElem && newElem.timestamp - lastElem.timestamp < CHART_INTERVAL) {
         //TODO average values instead of replacing
@@ -32,6 +32,21 @@ function rotateElems<T extends Timestamped>(elems: T[], newElem: T): T[] {
         elems.splice(0, 1);
     }
     return [...elems, newElem];
+}
+
+function proccessTelemetryMessage(messageData: any, setTelemetry: (value: SetStateAction<TelemetryRecord[]>) => void) {
+    setTelemetry((prevTelemetry: TelemetryRecord[]) => {
+        const newRecord = messageData.data as TelemetryRecord;
+        const power = newRecord.current * newRecord.voltage;
+        if (newRecord.current < 0) {
+            newRecord.regen = -power;
+            newRecord.power = 0;
+        } else {
+            newRecord.regen = 0;
+            newRecord.power = power;
+        }
+        return rotateElems(prevTelemetry, newRecord);
+    });
 }
 
 export const WebSocketProvider = (props: PropsWithChildren<WebSocketProviderProps>) => {
@@ -56,6 +71,7 @@ export const WebSocketProvider = (props: PropsWithChildren<WebSocketProviderProp
         ws.addEventListener("message", (event) => {
             const messageData = JSON.parse(event.data);
             if (messageData.type === MessageType.TELEMETRY) {
+                proccessTelemetryMessage(messageData, setTelemetry);
                 setTelemetry((prevTelemetry) => {
                     return rotateElems(prevTelemetry, messageData.data);
                 });

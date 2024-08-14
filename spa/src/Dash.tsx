@@ -2,8 +2,9 @@ import './Dash.css';
 import { useContext } from 'react';
 import { LineChart } from '@mui/x-charts/LineChart';
 import { WebSocketContext } from './WebSocketContext';
-import { PARAM_OPTIONS } from './types';
+import { PARAM_OPTIONS, TelemetryRecordFields } from './types';
 import { enumKeys } from './utils';
+import { colors } from '@mui/material';
 
 
 function ParamContainer({ name, value, unit }: { name: string, value: number, unit: string }) {
@@ -15,6 +16,49 @@ function ParamContainer({ name, value, unit }: { name: string, value: number, un
                 <span className="param-unit">{unit}</span>
             </div>
             <div>{name}</div>
+        </div>
+    )
+}
+
+enum ChartType {
+    power = 'power',
+}
+
+
+type ChartSettings = {
+    field: TelemetryRecordFields,
+    color: string
+}
+
+const ChartTypeMapping: { [key in ChartType]: ChartSettings[]} = {
+    'power': [
+        {'field': TelemetryRecordFields.power, 'color': colors.red[500],},
+        {'field': TelemetryRecordFields.human_watts, 'color': colors.blue[500]},
+        {'field': TelemetryRecordFields.regen, 'color': colors.green[500]},
+    ]
+}
+
+
+function Chart({ chartType }: { chartType: ChartType }) {
+    const bikeData = useContext(WebSocketContext);
+    const xAxis = bikeData?.telemetry.map((_, i) => i) || [];
+    const chartSettings = ChartTypeMapping[chartType];
+    const dataSeries = [];
+    for  (const chartConf of chartSettings) {
+        dataSeries.push({
+            data: bikeData?.telemetry.map((t) => t[chartConf.field]) || [],
+            showMark: false,
+            color: chartConf.color
+        })
+    }
+    return (
+        <div style={{width: "100%"}}>
+            <LineChart
+                xAxis={[{ data: xAxis }]}
+                series={dataSeries}
+                width={700}
+                height={300}
+            />
         </div>
     )
 }
@@ -33,8 +77,6 @@ export default function Dash() {
             }
         }
     }
-    const xAxis = socketData?.telemetry.map((_, i) => i) || [];
-    const chartData = socketData?.telemetry.map((t) => t.voltage) || [];
     return (
         <>
             <div id="telemetry-params">
@@ -44,19 +86,7 @@ export default function Dash() {
                 <button id="next-mode-button" className="default-button row-elem">Next Mode</button>
             </div>
 
-            <div style={{width: "100%"}}>
-                <LineChart
-                    xAxis={[{ data: xAxis }]}
-                    series={[
-                        {
-                            data: chartData,
-                            showMark: false,
-                        },
-                    ]}
-                    width={700}
-                    height={300}
-                />
-            </div>
+            <Chart chartType={ChartType.power} />
 
             <div className="row" style={{justifyContent: "space-around"}}>
                 <div>

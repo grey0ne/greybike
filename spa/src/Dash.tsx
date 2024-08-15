@@ -1,4 +1,4 @@
-import './Dash.css';
+import './dash.css';
 import { useContext, useState } from 'react';
 import { LineChart } from '@mui/x-charts/LineChart';
 import { WebSocketContext } from './WebSocketContext';

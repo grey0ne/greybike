@@ -26,7 +26,7 @@ from constants import (
 )
 from utils import check_running_on_pi, get_last_record, send_ws_message
 from handlers import (
-    dash_page_handler, websocket_handler, spa_asset_handler,
+    dash_page_handler, websocket_handler, spa_asset_handler, icons_handler,
     reset_log_handler, get_file_serve_handler, log_list_handler
 )
 from data_types import AppState, CATelemetryRecord, MessageType, SystemTelemetryRecord
@@ -172,6 +172,7 @@ def setup_routes(app: web.Application):
         web.get('/ws', websocket_handler),
         web.get('/manifest.json', get_file_serve_handler(MANIFEST_FILE)),
         web.get('/assets/{file}', spa_asset_handler),
+        web.get('/icons/{file}', icons_handler),
         web.get('/chart.js', get_file_serve_handler(f'{JS_DIRECTORY}/chart.js')),
         web.get('/logs', log_list_handler),
         web.post('/reset_log', reset_log_handler)
@@ -179,10 +180,6 @@ def setup_routes(app: web.Application):
     app.add_routes([
         web.get('/spa', get_file_serve_handler(SPA_HTML_FILE)),
     ])
-    for icon_file in FAVICON_FILES:
-        app.add_routes([
-            web.get(f'/{icon_file}', get_file_serve_handler(f'{FAVICON_DIRECTORY}/{icon_file}'))
-        ])
 
 def create_dirs():
     Path(TELEMETRY_LOG_DIRECTORY).mkdir(parents=True, exist_ok=True)

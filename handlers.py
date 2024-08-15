@@ -2,7 +2,7 @@ from aiohttp import web
 
 from telemetry_logs import reset_log
 from dash_page import DASH_PAGE_HTML
-from constants import WS_TIMEOUT, SPA_ASSETS_DIR
+from constants import WS_TIMEOUT, SPA_ASSETS_DIR, FAVICON_DIRECTORY
 from data_types import AppState
 from logs_page import render_logs_page
 import logging
@@ -51,6 +51,14 @@ async def websocket_handler(request: web.Request):
 async def spa_asset_handler(request: web.Request):
     file_name = request.match_info['file']
     file_path = os.path.join(SPA_ASSETS_DIR, file_name)
+    if not os.path.exists(file_path):
+        return web.Response(text='File not found', status=404)
+    return file_response(file_path)
+
+
+async def icons_handler(request: web.Request):
+    file_name = request.match_info['file']
+    file_path = os.path.join(FAVICON_DIRECTORY, file_name)
     if not os.path.exists(file_path):
         return web.Response(text='File not found', status=404)
     return file_response(file_path)

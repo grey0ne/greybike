@@ -28,7 +28,7 @@ function Chart({ chartType }: { chartType: ChartType }) {
     const xAxis = bikeData?.telemetry.map((_, i) => telemetryLen-i) || [];
     const chartSettings = ChartTypeMapping[chartType];
     const dataSeries = [];
-    for  (const chartConf of chartSettings) {
+    for (const chartConf of chartSettings) {
         const param = chartConf.field;
         const paramData = PARAM_OPTIONS[param];
         dataSeries.push({
@@ -79,7 +79,7 @@ export default function Dash() {
     const [mode, setMode] = useState<DashMode>(DashMode.SPEED);
     const [chartType, setChartType] = useState<ChartType>(ChartType.power);
     const socketData = useContext(WebSocketContext);
-    const { release, type: lockType } = useWakeLock();
+    const { type: lockType } = useWakeLock();
     const lastTelemetry = socketData?.telemetry[socketData.telemetry.length - 1];
     const paramElems = [];
     if (lastTelemetry) {
@@ -118,7 +118,6 @@ export default function Dash() {
                     </div>
                 </Stack>
                 <Stack direction='row' spacing={2}>
-                    <Button variant='contained' onClick={() => release()}>Release wake lock</Button>
                     <Button variant='contained' onClick={() => setChartType(ChartType.power)}>Power</Button>
                     <Button variant='contained' onClick={() => setChartType(ChartType.speed)}>Speed</Button>
                 </Stack>

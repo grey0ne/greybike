@@ -1,10 +1,13 @@
 import { createContext, useState, useRef, useEffect, PropsWithChildren } from "react"
-import { TelemetryRecord, SystemRecord, MessageType, GNSSRecord } from "./types"
+import { TelemetryRecord, SystemRecord, MessageType, GNSSRecord, ElectricRecord } from "./types"
 import { SetStateAction } from "react"
 
 type WebSocketData = {
     isConnected: boolean,
-    telemetry: TelemetryRecord[]
+    telemetry: TelemetryRecord[],
+    systemRecords: SystemRecord[],
+    electricRecords: ElectricRecord[],
+    gnssRecords: GNSSRecord[]
 }
 
 export const WebSocketContext = createContext<WebSocketData | null>(null)
@@ -54,6 +57,7 @@ export const WebSocketProvider = (props: PropsWithChildren<WebSocketProviderProp
     const [telemetry, setTelemetry] = useState<TelemetryRecord[]>([])
     const [systemRecords, setSystemRecords] = useState<SystemRecord[]>([]);
     const [gnssRecords, setGnssRecords] = useState<GNSSRecord[]>([]);
+    const [electricRecords, setElectricRecords] = useState<ElectricRecord[]>([]);
     const { wsUrl } = props;
 
     const connection = useRef<WebSocket | null>(null);
@@ -86,6 +90,11 @@ export const WebSocketProvider = (props: PropsWithChildren<WebSocketProviderProp
                     return rotateElems(prevGnssState, messageData.data);
                 })
             }
+            if (messageData.type === MessageType.ELECTRIC) {
+                setElectricRecords((prevElectricState) => {
+                    return rotateElems(prevElectricState, messageData.data);
+                })
+            }
         })
         ws.addEventListener("error", (error) => {
             console.error('Socket encountered error. Closing socket', error);
@@ -102,7 +111,8 @@ export const WebSocketProvider = (props: PropsWithChildren<WebSocketProviderProp
         isConnected,
         telemetry: telemetry,
         systemRecords: systemRecords,
-        gnssRecords: gnssRecords
+        gnssRecords: gnssRecords,
+        electricRecords: electricRecords
     }
 
     return (

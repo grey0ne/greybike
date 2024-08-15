@@ -2,7 +2,7 @@ import './dash.css';
 import { useContext, useState } from 'react';
 import { LineChart } from '@mui/x-charts/LineChart';
 import { WebSocketContext } from './WebSocketContext';
-import { PARAM_OPTIONS, DashMode, DashModeConfigs, ChartTypeMapping, ChartType } from './types';
+import { PARAM_OPTIONS, DashMode, DashModeConfigs, ChartTypeMapping, ChartType, ChartSettings } from './types';
 import { Button, Stack } from '@mui/material';
 import { enumKeys } from './utils';
 import { useWakeLock } from './use-wake-lock';
@@ -21,31 +21,43 @@ function ParamContainer({ name, value, unit }: { name: string, value: number, un
     )
 }
 
-
-function Chart({ chartType }: { chartType: ChartType }) {
-    const bikeData = useContext(WebSocketContext);
-    const telemetryLen = bikeData?.telemetry.length || 0;
-    const xAxis = bikeData?.telemetry.map((_, i) => telemetryLen-i) || [];
-    const chartSettings = ChartTypeMapping[chartType];
+function getDataSeries(data: any[], chartSettings: ChartSettings[]): { xAxis: any[], series: any[] } {
     const dataSeries = [];
+    const dataLen = data.length;
+    const xAxis = data.map((_, i) => dataLen-i);
     for (const chartConf of chartSettings) {
         const param = chartConf.field;
         const paramData = PARAM_OPTIONS[param];
         dataSeries.push({
             label: paramData.name,
-            data: bikeData?.telemetry.map((t) => t[param]) || [],
+            data: data.map((t) => t[param]),
             showMark: false,
             color: chartConf.color
         })
     }
+    return { 
+        xAxis: [{
+            data: xAxis,
+            scaleType: 'point',
+        }],
+        series: dataSeries
+    }
+}
+
+function Chart({ chartType }: { chartType: ChartType }) {
+    let chartData: { xAxis: any[], series: any[] } = { xAxis: [], series: [] };
+    const bikeData = useContext(WebSocketContext);
+    const chartSettings = ChartTypeMapping[chartType];
+    if (chartType === ChartType.electronics) {
+        chartData = getDataSeries(bikeData?.electricRecords || [], chartSettings);
+    }
+    if (chartType === ChartType.power || chartType === ChartType.speed) {
+        chartData = getDataSeries(bikeData?.telemetry || [], chartSettings);
+    }
     return (
         <Stack sx={{ width: '100%', maxWidth: 1000 }}>
             <LineChart
-                xAxis={[{
-                    data: xAxis,
-                    scaleType: 'point',
-                }]}
-                series={dataSeries}
+                { ...chartData }
                 height={300}
             />
         </Stack>
@@ -120,6 +132,7 @@ export default function Dash() {
                 <Stack direction='row' spacing={2}>
                     <Button variant='contained' onClick={() => setChartType(ChartType.power)}>Power</Button>
                     <Button variant='contained' onClick={() => setChartType(ChartType.speed)}>Speed</Button>
+                    <Button variant='contained' onClick={() => setChartType(ChartType.electronics)}>Electric</Button>
                 </Stack>
                 <Stack direction='row' spacing={2}>
                     <Button variant='contained'>Reset Log File</Button>

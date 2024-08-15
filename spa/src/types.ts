@@ -57,6 +57,12 @@ export type GNSSRecord = {
     altitude: number,
 }
 
+export type ElectricRecord = {
+    voltage: number,
+    current: number,
+    power: number,
+}
+
 export const PARAM_OPTIONS: { [key in TelemetryRecordFields]: ParamData} = {
     'amper_hours': {'name': 'Amper Hours', 'unit': 'Ah'},
     'human_torque': {'name': 'Human Torque', 'unit': 'Nm', 'treshold': 1},
@@ -73,10 +79,11 @@ export const PARAM_OPTIONS: { [key in TelemetryRecordFields]: ParamData} = {
 export enum ChartType {
     power = 'power',
     speed = 'speed',
+    electronics = 'electronics',
 }
 
-type ChartSettings = {
-    field: TelemetryRecordFields,
+export type ChartSettings = {
+    field: TelemetryRecordFields | keyof ElectricRecord,
     color: string
 }
 
@@ -85,6 +92,11 @@ export const ChartTypeMapping: { [key in ChartType]: ChartSettings[]} = {
         {'field': TelemetryRecordFields.power, 'color': colors.red[500],},
         {'field': TelemetryRecordFields.human_watts, 'color': colors.blue[500]},
         {'field': TelemetryRecordFields.regen, 'color': colors.green[500]},
+    ],
+    'electronics': [
+        {'field': 'voltage', 'color': colors.red[500]},
+        {'field': 'current', 'color': colors.blue[500]},
+        {'field': 'power', 'color': colors.green[500]},
     ],
     'speed': [
         {'field': TelemetryRecordFields.pedal_rpm, 'color': colors.red[500]},

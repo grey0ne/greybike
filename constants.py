@@ -10,14 +10,11 @@ SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(SOURCE_DIR, 'public')
 SPA_DIST_DIR = os.path.join(SOURCE_DIR, 'spa/dist')
 MANIFEST_FILE = os.path.join(SPA_DIST_DIR, 'manifest.json')
-JS_FILE = os.path.join(SOURCE_DIR, 'telemetry.js')
-STYLES_FILE = os.path.join(SOURCE_DIR, 'spa/src/dash.css')
 SPA_HTML_FILE = os.path.join(SPA_DIST_DIR, 'index.html')
 SPA_ASSETS_DIR = os.path.join(SPA_DIST_DIR, 'assets')
 TELEMETRY_LOG_DIRECTORY = os.path.join(SOURCE_DIR, 'telemetry_logs')
 APP_LOG_DIRECTORY = os.path.join(SOURCE_DIR, 'app_logs')
 FAVICON_DIRECTORY = os.path.join(SPA_DIST_DIR, 'icons')
-JS_DIRECTORY = os.path.join(SOURCE_DIR, 'js')
 APP_LOG_FILE = os.path.join(APP_LOG_DIRECTORY, 'app.log')
 
 LOG_VERSION = '1'
@@ -91,12 +88,7 @@ LOGGING_CONFIG: dict[str, Any] = {
             'formatter': 'timestamp'
         }
     },
-    'loggers': {
-        'root': {
-            'level': 'DEBUG',
-            'handlers': ['console']
-        }
-    }
+    'loggers': {}
 }
 if DEV_MODE:
     LOGGING_CONFIG['loggers']['greybike'] = {

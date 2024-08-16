@@ -20,14 +20,14 @@ from constants import (
     TELEMETRY_LOG_DIRECTORY, LOGGING_CONFIG, DEV_MODE, SPA_HTML_FILE,
     CA_TELEMETRY_READ_INTERVAL, CA_TELEMETRY_LOG_INTERVAL, CA_TELEMETRY_SEND_INTERVAL,
     ELECTRIC_RECORD_READ_INTERVAL, ELECTRIC_RECORD_SEND_INTERVAL,
-    GNSS_READ_INTERVAL, GNSS_SEND_INTERVAL, FAVICON_DIRECTORY, JS_DIRECTORY,
+    GNSS_READ_INTERVAL, GNSS_SEND_INTERVAL,
     SYSTEM_PARAMS_READ_INTERVAL, SYSTEM_PARAMS_SEND_INTERVAL, 
     APP_LOG_DIRECTORY, PING_INTERVAL, SERVER_PORT, MANIFEST_FILE
 )
 from utils import check_running_on_pi, get_last_record, send_ws_message
 from handlers import (
-    dash_page_handler, websocket_handler, spa_asset_handler, icons_handler,
-    reset_log_handler, get_file_serve_handler, log_list_handler
+    websocket_handler, spa_asset_handler, icons_handler,
+    reset_log_handler, get_file_serve_handler
 )
 from data_types import AppState, CATelemetryRecord, MessageType, SystemTelemetryRecord
 from tasks import create_periodic_task
@@ -40,8 +40,6 @@ if check_running_on_pi():
 else:
     CPUTemperature = None
 
-FAVICON_FILES = ['favicon-16.png', 'favicon-32.png', 'favicon-96.png', 'touch-icon-76.png']
-TELEMETRY_TASK = 'telemetry_task'
 
 logging.config.dictConfig(LOGGING_CONFIG)
 
@@ -168,17 +166,12 @@ def get_all_log_files():
 
 def setup_routes(app: web.Application):
     app.add_routes([
-        web.get('/',   dash_page_handler),
+        web.get('/', get_file_serve_handler(SPA_HTML_FILE)),
         web.get('/ws', websocket_handler),
         web.get('/manifest.json', get_file_serve_handler(MANIFEST_FILE)),
         web.get('/assets/{file}', spa_asset_handler),
         web.get('/icons/{file}', icons_handler),
-        web.get('/chart.js', get_file_serve_handler(f'{JS_DIRECTORY}/chart.js')),
-        web.get('/logs', log_list_handler),
         web.post('/reset_log', reset_log_handler)
-    ])
-    app.add_routes([
-        web.get('/spa', get_file_serve_handler(SPA_HTML_FILE)),
     ])
 
 def create_dirs():

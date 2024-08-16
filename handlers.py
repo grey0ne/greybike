@@ -1,17 +1,12 @@
 from aiohttp import web
 
 from telemetry_logs import reset_log
-from dash_page import DASH_PAGE_HTML
 from constants import WS_TIMEOUT, SPA_ASSETS_DIR, FAVICON_DIRECTORY
 from data_types import AppState
-from logs_page import render_logs_page
 import logging
 import os
 
 MAX_WEBSOCKET_CONNECTIONS = 3
-
-async def dash_page_handler(request: web.Request):
-    return web.Response(text=DASH_PAGE_HTML, content_type='text/html')
 
 async def reset_log_handler(request: web.Request):
     reset_log(request.app['state'])
@@ -62,9 +57,3 @@ async def icons_handler(request: web.Request):
     if not os.path.exists(file_path):
         return web.Response(text='File not found', status=404)
     return file_response(file_path)
-
-
-async def log_list_handler(request: web.Request):
-    state: AppState = request.app['state']
-    return web.Response(text=render_logs_page(state.log_files), content_type='text/html')
-

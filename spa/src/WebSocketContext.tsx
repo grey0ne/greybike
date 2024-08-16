@@ -1,14 +1,8 @@
 import { createContext, useState, useRef, useEffect, PropsWithChildren } from "react"
-import { TelemetryRecord, SystemRecord, MessageType, GNSSRecord, ElectricRecord, Timestamped } from "./types"
+import { TelemetryRecord, SystemRecord, TelemetryType, GNSSRecord, ElectricRecord, Timestamped, WebSocketData } from "./types"
 import { SetStateAction } from "react"
 
-type WebSocketData = {
-    isConnected: boolean,
-    telemetry: TelemetryRecord[],
-    systemRecords: SystemRecord[],
-    electricRecords: ElectricRecord[],
-    gnssRecords: GNSSRecord[]
-}
+
 
 export const WebSocketContext = createContext<WebSocketData | null>(null)
 
@@ -58,7 +52,7 @@ function processElectricMessage(messageData: any, setElectricRecords: (value: Se
 
 export const WebSocketProvider = (props: PropsWithChildren<WebSocketProviderProps>) => {
     const [isConnected, setIsConnected] = useState(false)
-    const [telemetry, setTelemetry] = useState<TelemetryRecord[]>([])
+    const [caRecords, setCARecords] = useState<TelemetryRecord[]>([])
     const [systemRecords, setSystemRecords] = useState<SystemRecord[]>([]);
     const [gnssRecords, setGnssRecords] = useState<GNSSRecord[]>([]);
     const [electricRecords, setElectricRecords] = useState<ElectricRecord[]>([]);
@@ -77,20 +71,20 @@ export const WebSocketProvider = (props: PropsWithChildren<WebSocketProviderProp
         })
         ws.addEventListener("message", (event) => {
             const messageData = JSON.parse(event.data);
-            if (messageData.type === MessageType.TELEMETRY) {
-                proccessTelemetryMessage(messageData, setTelemetry);
+            if (messageData.type === TelemetryType.CA) {
+                proccessTelemetryMessage(messageData, setCARecords);
             }
-            if (messageData.type === MessageType.SYSTEM) {
+            if (messageData.type === TelemetryType.SYSTEM) {
                 setSystemRecords((prevSystemState) => {
                     return rotateElems(prevSystemState, messageData.data);
                 });
             }
-            if (messageData.type === MessageType.GNSS) {
+            if (messageData.type === TelemetryType.GNSS) {
                 setGnssRecords((prevGnssState) => {
                     return rotateElems(prevGnssState, messageData.data);
                 })
             }
-            if (messageData.type === MessageType.ELECTRIC) {
+            if (messageData.type === TelemetryType.ELECTRIC) {
                 processElectricMessage(messageData, setElectricRecords);
             }
         })
@@ -107,7 +101,7 @@ export const WebSocketProvider = (props: PropsWithChildren<WebSocketProviderProp
 
     const ret = {
         isConnected,
-        telemetry: telemetry,
+        caRecords: caRecords,
         systemRecords: systemRecords,
         gnssRecords: gnssRecords,
         electricRecords: electricRecords

@@ -87,7 +87,7 @@ async def ca_telemetry_log_task(state: AppState):
 async def ca_telemetry_websocket_task(state: AppState):
     last_record = get_last_record(state.ca_telemetry_records, CA_TELEMETRY_READ_INTERVAL)
     if last_record is not None:
-        await send_ws_message(state, MessageType.TELEMETRY, asdict(last_record))
+        await send_ws_message(state, MessageType.CA, asdict(last_record))
 
 
 async def gnss_read_task(state: AppState):

@@ -19,7 +19,7 @@ def get_current_timestamp() -> float:
 
 class MessageType(StrEnum):
     SYSTEM = 'system'
-    TELEMETRY = 'telemetry'
+    CA = 'ca'
     GNSS = 'gnss'
     EVENT = 'event'
     ELECTRIC = 'electric'

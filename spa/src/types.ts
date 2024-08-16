@@ -1,7 +1,7 @@
 import { colors } from '@mui/material';
 
-export enum MessageType {
-    TELEMETRY = 'telemetry',
+export enum TelemetryType {
+    CA = 'ca',
     SYSTEM = 'system',
     STATUS = 'status',
     GNSS = 'gnss',
@@ -17,7 +17,7 @@ export interface Timestamped {
     timestamp: number
 }
 
-export enum TelemetryRecordFields {
+export enum CARecordFields {
     timestamp = 'timestamp',
     amper_hours = 'amper_hours',
     human_torque = 'human_torque',
@@ -28,16 +28,17 @@ export enum TelemetryRecordFields {
     regen = 'regen',
     pedal_rpm = 'pedal_rpm',
     speed = 'speed',
+    motor_temp = 'motor_temp',
 }
 
-export const DashModeConfigs: { [key in DashMode]: { title: string, fields: TelemetryRecordFields[] } } = {
+export const DashModeConfigs: { [key in DashMode]: { title: string, fields: CARecordFields[] } } = {
     'speed': {
         title: 'Speed',
-        fields: [TelemetryRecordFields.pedal_rpm, TelemetryRecordFields.speed]
+        fields: [CARecordFields.pedal_rpm, CARecordFields.speed]
     },
     'power': {
         'title': 'Power',
-        'fields': [TelemetryRecordFields.power, TelemetryRecordFields.human_watts, TelemetryRecordFields.regen]
+        'fields': [CARecordFields.power, CARecordFields.human_watts, CARecordFields.regen]
     }
 }
 
@@ -48,7 +49,7 @@ export type ParamData = {
 }
 
 
-export type TelemetryRecord = { [key in TelemetryRecordFields]: number }
+export type TelemetryRecord = { [key in CARecordFields]: number }
 
 export type SystemRecord = {
     cpu_temp: number,
@@ -67,9 +68,12 @@ export type ElectricRecord = {
     voltage: number,
     current: number,
     power: number,
+    temp: number,
 }
 
-export const PARAM_OPTIONS: { [key in TelemetryRecordFields]: ParamData} = {
+type TelemetryFields = CARecordFields | keyof ElectricRecord | keyof SystemRecord | keyof GNSSRecord
+
+export const PARAM_OPTIONS: { [key in TelemetryFields]: ParamData} = {
     'amper_hours': {'name': 'Amper Hours', 'unit': 'Ah'},
     'human_torque': {'name': 'Human Torque', 'unit': 'Nm', 'treshold': 1},
     'human_watts': {'name': 'Human', 'unit': 'W'},
@@ -80,17 +84,26 @@ export const PARAM_OPTIONS: { [key in TelemetryRecordFields]: ParamData} = {
     'pedal_rpm': {'name': 'Pedal RPM', 'unit': 'rpm'},
     'speed': {'name': 'Speed', 'unit': 'km/h'},
     'timestamp': {'name': 'Time', 'unit': 's'},
+    'motor_temp': {'name': 'Motor Temp', 'unit': '°C'},
+    'cpu_temp': {'name': 'CPU Temp', 'unit': '°C'},
+    'cpu_usage': {'name': 'CPU Usage', 'unit': '%'},
+    'temp': {'name': 'Controller Temp', 'unit': '°C'},
+    'altitude': {'name': 'Altitude', 'unit': 'm'},
+    'latitude': {'name': 'Latitude', 'unit': '°'},
+    'longitude': {'name': 'Longitude', 'unit': '°'},
 }
 
 export enum ChartType {
     motor = 'motor',
     speed = 'speed',
     power = 'power',
+    temp = 'temp',
 }
 
 export type ChartSettings = {
-    field: TelemetryRecordFields | keyof ElectricRecord,
-    color: string
+    field: TelemetryFields,
+    color: string,
+    type: TelemetryType
 }
 
 type ChartMapping = {
@@ -102,19 +115,35 @@ type ChartMapping = {
 export const ChartTypeMapping: ChartMapping = {
     motor: {
         lines: [
-            {'field': TelemetryRecordFields.power, 'color': colors.red[500],},
-            {'field': TelemetryRecordFields.human_watts, 'color': colors.blue[500]},
-            {'field': TelemetryRecordFields.regen, 'color': colors.green[500]},
+            {field: CARecordFields.power, type: TelemetryType.CA, 'color': colors.red[500],},
+            {field: CARecordFields.human_watts, type: TelemetryType.CA, 'color': colors.blue[500]},
+            {field: CARecordFields.regen, type: TelemetryType.CA, 'color': colors.green[500]},
         ]
     },
     power: {
-        lines: [ {'field': 'power', 'color': colors.green[500]}, ],
+        lines: [
+            {field: 'power', type: TelemetryType.ELECTRIC, color: colors.green[500]},
+        ],
     },
     speed: {
         lines: [
-            {'field': TelemetryRecordFields.pedal_rpm, 'color': colors.red[500]},
-            {'field': TelemetryRecordFields.speed, 'color': colors.blue[500]},
+            {field: CARecordFields.pedal_rpm, type: TelemetryType.CA, color: colors.red[500]},
+            {field: CARecordFields.speed, type: TelemetryType.CA, color: colors.blue[500]},
+        ]
+    },
+    temp: {
+        lines: [
+            {field: 'cpu_temp', type: TelemetryType.SYSTEM, color: colors.red[500]},
+            {field: 'temp', type: TelemetryType.ELECTRIC, color: colors.green[500]},
+            {field: CARecordFields.motor_temp, type: TelemetryType.CA, color: colors.blue[500]},
         ]
     }
 }
 
+export type WebSocketData = {
+    isConnected: boolean,
+    caRecords: TelemetryRecord[],
+    systemRecords: SystemRecord[],
+    electricRecords: ElectricRecord[],
+    gnssRecords: GNSSRecord[]
+}

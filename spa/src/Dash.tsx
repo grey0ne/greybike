@@ -26,7 +26,7 @@ function ParamContainer({ name, value, unit }: { name: string, value: number, un
 
 function DashParams({ mode }: { mode: DashMode }){
     const socketData = useContext(WebSocketContext);
-    const lastTelemetry = socketData?.telemetry[socketData.telemetry.length - 1];
+    const lastTelemetry = socketData?.caRecords[socketData.caRecords.length - 1];
     const config = DashModeConfigs[mode];
     const paramElems = [];
     if (lastTelemetry) {
@@ -49,20 +49,7 @@ function DashParams({ mode }: { mode: DashMode }){
 export default function Dash() {
     const [mode, setMode] = useState<DashMode>(DashMode.SPEED);
     const [chartType, setChartType] = useState<ChartType>(ChartType.motor);
-    const socketData = useContext(WebSocketContext);
     const { type: lockType } = useWakeLock();
-    const lastTelemetry = socketData?.telemetry[socketData.telemetry.length - 1];
-    const paramElems = [];
-    if (lastTelemetry) {
-        for (const param of enumKeys(lastTelemetry)) {
-            const paramData = PARAM_OPTIONS[param];
-            if (paramData) {
-                paramElems.push(
-                    <ParamContainer key={param} name={paramData.name} value={lastTelemetry[param]} unit={paramData.unit} />
-                )
-            }
-        }
-    }
     const chartButtons = [];
     for (const chartType of enumKeys(ChartType)) {
         const cType = ChartType[chartType];
@@ -82,25 +69,16 @@ export default function Dash() {
                 <Chart chartType={chartType} />
 
                 <Stack direction='row' spacing={2}>
-                    <div>
-                        {lockType ? `Wake Lock: ${lockType}` : 'Wake Lock released'}
-                    </div>
-                    <div>
-                        <span id="log_file">
-                        </span>
-                    </div>
-                    <div>
-                        <span id="log_duration">
-                        </span>
-                        &nbsp;Seconds
-                    </div>
-                </Stack>
-                <Stack direction='row' spacing={2}>
                     { chartButtons }
                 </Stack>
                 <Stack direction='row' spacing={2}>
                     <Button variant='contained'>Reset Log File</Button>
                     <Button variant='outlined'>All logs</Button>
+                </Stack>
+                <Stack direction='row' spacing={2}>
+                    <div>
+                        {lockType ? `Wake Lock: ${lockType}` : 'Wake Lock released'}
+                    </div>
                 </Stack>
             </Stack>
         </>

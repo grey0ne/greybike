@@ -9,6 +9,8 @@ elif [ $1 = "update" ]; then
     sudo systemctl restart greybike.service
 elif [ $1 = "restart" ]; then
     sudo systemctl restart greybike.service
+elif [ $1 = "stop" ]; then
+    sudo systemctl stop greybike.service
 else
     /home/greyone/greybike/.venv/bin/python /home/greyone/greybike/cli.py $1
 fi

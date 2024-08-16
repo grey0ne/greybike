@@ -93,18 +93,28 @@ export type ChartSettings = {
     color: string
 }
 
-export const ChartTypeMapping: { [key in ChartType]: ChartSettings[]} = {
-    'motor': [
-        {'field': TelemetryRecordFields.power, 'color': colors.red[500],},
-        {'field': TelemetryRecordFields.human_watts, 'color': colors.blue[500]},
-        {'field': TelemetryRecordFields.regen, 'color': colors.green[500]},
-    ],
-    'power': [
-        {'field': 'power', 'color': colors.green[500]},
-    ],
-    'speed': [
-        {'field': TelemetryRecordFields.pedal_rpm, 'color': colors.red[500]},
-        {'field': TelemetryRecordFields.speed, 'color': colors.blue[500]},
-    ]
+type ChartMapping = {
+    [key in ChartType]: {
+        lines: ChartSettings[]
+    }
+}
+
+export const ChartTypeMapping: ChartMapping = {
+    motor: {
+        lines: [
+            {'field': TelemetryRecordFields.power, 'color': colors.red[500],},
+            {'field': TelemetryRecordFields.human_watts, 'color': colors.blue[500]},
+            {'field': TelemetryRecordFields.regen, 'color': colors.green[500]},
+        ]
+    },
+    power: {
+        lines: [ {'field': 'power', 'color': colors.green[500]}, ],
+    },
+    speed: {
+        lines: [
+            {'field': TelemetryRecordFields.pedal_rpm, 'color': colors.red[500]},
+            {'field': TelemetryRecordFields.speed, 'color': colors.blue[500]},
+        ]
+    }
 }
 

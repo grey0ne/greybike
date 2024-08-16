@@ -49,7 +49,7 @@ function getDataSeries(data: any[], chartSettings: ChartSettings[]): { xAxis: an
 function Chart({ chartType }: { chartType: ChartType }) {
     let chartData: { xAxis: any[], series: any[] } = { xAxis: [], series: [] };
     const bikeData = useContext(WebSocketContext);
-    const chartSettings = ChartTypeMapping[chartType];
+    const chartSettings = ChartTypeMapping[chartType].lines;
     if (chartType === ChartType.power) {
         chartData = getDataSeries(bikeData?.electricRecords || [], chartSettings);
     }

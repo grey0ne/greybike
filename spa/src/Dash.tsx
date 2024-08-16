@@ -50,10 +50,10 @@ function Chart({ chartType }: { chartType: ChartType }) {
     let chartData: { xAxis: any[], series: any[] } = { xAxis: [], series: [] };
     const bikeData = useContext(WebSocketContext);
     const chartSettings = ChartTypeMapping[chartType];
-    if (chartType === ChartType.electronics) {
+    if (chartType === ChartType.power) {
         chartData = getDataSeries(bikeData?.electricRecords || [], chartSettings);
     }
-    if (chartType === ChartType.power || chartType === ChartType.speed) {
+    if (chartType === ChartType.motor || chartType === ChartType.speed) {
         chartData = getDataSeries(bikeData?.telemetry || [], chartSettings);
     }
     return (
@@ -93,7 +93,7 @@ function DashParams({ mode }: { mode: DashMode }){
 
 export default function Dash() {
     const [mode, setMode] = useState<DashMode>(DashMode.SPEED);
-    const [chartType, setChartType] = useState<ChartType>(ChartType.power);
+    const [chartType, setChartType] = useState<ChartType>(ChartType.motor);
     const socketData = useContext(WebSocketContext);
     const { type: lockType } = useWakeLock();
     const lastTelemetry = socketData?.telemetry[socketData.telemetry.length - 1];
@@ -107,6 +107,13 @@ export default function Dash() {
                 )
             }
         }
+    }
+    const chartButtons = [];
+    for (const chartType of enumKeys(ChartType)) {
+        const cType = ChartType[chartType];
+        chartButtons.push(
+            <Button key={cType} variant='contained' onClick={() => setChartType(cType)}>{cType}</Button>
+        );
     }
     return (
         <>
@@ -134,9 +141,7 @@ export default function Dash() {
                     </div>
                 </Stack>
                 <Stack direction='row' spacing={2}>
-                    <Button variant='contained' onClick={() => setChartType(ChartType.power)}>Power</Button>
-                    <Button variant='contained' onClick={() => setChartType(ChartType.speed)}>Speed</Button>
-                    <Button variant='contained' onClick={() => setChartType(ChartType.electronics)}>Electric</Button>
+                    { chartButtons }
                 </Stack>
                 <Stack direction='row' spacing={2}>
                     <Button variant='contained'>Reset Log File</Button>

@@ -13,6 +13,10 @@ export enum DashMode {
     POWER = 'power',
 }
 
+export interface Timestamped {
+    timestamp: number
+}
+
 export enum TelemetryRecordFields {
     timestamp = 'timestamp',
     amper_hours = 'amper_hours',
@@ -52,12 +56,14 @@ export type SystemRecord = {
 }
 
 export type GNSSRecord = {
+    timestamp: number,
     latitude: number,
     longitude: number,
     altitude: number,
 }
 
 export type ElectricRecord = {
+    timestamp: number,
     voltage: number,
     current: number,
     power: number,
@@ -77,9 +83,9 @@ export const PARAM_OPTIONS: { [key in TelemetryRecordFields]: ParamData} = {
 }
 
 export enum ChartType {
-    power = 'power',
+    motor = 'motor',
     speed = 'speed',
-    electronics = 'electronics',
+    power = 'power',
 }
 
 export type ChartSettings = {
@@ -88,14 +94,12 @@ export type ChartSettings = {
 }
 
 export const ChartTypeMapping: { [key in ChartType]: ChartSettings[]} = {
-    'power': [
+    'motor': [
         {'field': TelemetryRecordFields.power, 'color': colors.red[500],},
         {'field': TelemetryRecordFields.human_watts, 'color': colors.blue[500]},
         {'field': TelemetryRecordFields.regen, 'color': colors.green[500]},
     ],
-    'electronics': [
-        {'field': 'voltage', 'color': colors.red[500]},
-        {'field': 'current', 'color': colors.blue[500]},
+    'power': [
         {'field': 'power', 'color': colors.green[500]},
     ],
     'speed': [

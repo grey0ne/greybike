@@ -1,5 +1,5 @@
 import { createContext, useState, useRef, useEffect, PropsWithChildren } from "react"
-import { TelemetryRecord, SystemRecord, MessageType, GNSSRecord, ElectricRecord } from "./types"
+import { TelemetryRecord, SystemRecord, MessageType, GNSSRecord, ElectricRecord, Timestamped } from "./types"
 import { SetStateAction } from "react"
 
 type WebSocketData = {
@@ -18,10 +18,6 @@ type WebSocketProviderProps = {
 
 const LOGS_DURATION = 200;
 const CHART_INTERVAL = 1; // In seconds
-
-interface Timestamped {
-    timestamp: number
-}
 
 
 function rotateElems<T extends Timestamped>(elems: T[], newElem: T): T[] {
@@ -52,6 +48,14 @@ function proccessTelemetryMessage(messageData: any, setTelemetry: (value: SetSta
     });
 }
 
+function processElectricMessage(messageData: any, setElectricRecords: (value: SetStateAction<ElectricRecord[]>) => void) {
+    setElectricRecords((prevElectricState: ElectricRecord[]) => {
+        const newRecord = messageData.data as ElectricRecord;
+        newRecord.power = newRecord.current * newRecord.voltage;
+        return rotateElems(prevElectricState, newRecord);
+    });
+}
+
 export const WebSocketProvider = (props: PropsWithChildren<WebSocketProviderProps>) => {
     const [isConnected, setIsConnected] = useState(false)
     const [telemetry, setTelemetry] = useState<TelemetryRecord[]>([])
@@ -64,7 +68,6 @@ export const WebSocketProvider = (props: PropsWithChildren<WebSocketProviderProp
 
     useEffect(() => {
         if (!connection.current) {
-            console.log("Creating new websocket connection");
             connection.current = new WebSocket(wsUrl);
         }
         const ws = connection.current;
@@ -76,9 +79,6 @@ export const WebSocketProvider = (props: PropsWithChildren<WebSocketProviderProp
             const messageData = JSON.parse(event.data);
             if (messageData.type === MessageType.TELEMETRY) {
                 proccessTelemetryMessage(messageData, setTelemetry);
-                setTelemetry((prevTelemetry) => {
-                    return rotateElems(prevTelemetry, messageData.data);
-                });
             }
             if (messageData.type === MessageType.SYSTEM) {
                 setSystemRecords((prevSystemState) => {
@@ -91,9 +91,7 @@ export const WebSocketProvider = (props: PropsWithChildren<WebSocketProviderProp
                 })
             }
             if (messageData.type === MessageType.ELECTRIC) {
-                setElectricRecords((prevElectricState) => {
-                    return rotateElems(prevElectricState, messageData.data);
-                })
+                processElectricMessage(messageData, setElectricRecords);
             }
         })
         ws.addEventListener("error", (error) => {

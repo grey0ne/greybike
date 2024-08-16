@@ -1,11 +1,11 @@
 import './dash.css';
 import { useContext, useState } from 'react';
-import { LineChart } from '@mui/x-charts/LineChart';
 import { WebSocketContext } from './WebSocketContext';
-import { PARAM_OPTIONS, DashMode, DashModeConfigs, ChartTypeMapping, ChartType, ChartSettings } from './types';
-import { Button, Stack, Unstable_Grid2 as Grid, Box } from '@mui/material';
+import { PARAM_OPTIONS, DashMode, DashModeConfigs, ChartType } from './types';
+import { Button, Stack, Unstable_Grid2 as Grid } from '@mui/material';
 import { enumKeys } from './utils';
 import { useWakeLock } from './use-wake-lock';
+import { Chart } from './Chart';
 
 
 function ParamContainer({ name, value, unit }: { name: string, value: number, unit: string }) {
@@ -20,51 +20,6 @@ function ParamContainer({ name, value, unit }: { name: string, value: number, un
                 <div className="param-name">{name}</div>
             </Stack>
         </Grid>
-    )
-}
-
-function getDataSeries(data: any[], chartSettings: ChartSettings[]): { xAxis: any[], series: any[] } {
-    const dataSeries = [];
-    const dataLen = data.length;
-    const xAxis = data.map((_, i) => dataLen-i);
-    for (const chartConf of chartSettings) {
-        const param = chartConf.field;
-        const paramData = PARAM_OPTIONS[param];
-        dataSeries.push({
-            label: paramData.name,
-            data: data.map((t) => t[param]),
-            showMark: false,
-            color: chartConf.color
-        })
-    }
-    return { 
-        xAxis: [{
-            data: xAxis,
-            scaleType: 'point',
-        }],
-        series: dataSeries
-    }
-}
-
-function Chart({ chartType }: { chartType: ChartType }) {
-    let chartData: { xAxis: any[], series: any[] } = { xAxis: [], series: [] };
-    const bikeData = useContext(WebSocketContext);
-    const chartSettings = ChartTypeMapping[chartType].lines;
-    if (chartType === ChartType.power) {
-        chartData = getDataSeries(bikeData?.electricRecords || [], chartSettings);
-    }
-    if (chartType === ChartType.motor || chartType === ChartType.speed) {
-        chartData = getDataSeries(bikeData?.telemetry || [], chartSettings);
-    }
-    return (
-        <Box sx={{ width: '100%', overflowX: 'hidden'}}>
-            <Stack sx={{ width: 'calc(100% + 40px);', maxWidth: 1000 }}>
-                <LineChart
-                    { ...chartData }
-                    height={300}
-                />
-            </Stack>
-        </Box>
     )
 }
 

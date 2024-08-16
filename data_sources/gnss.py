@@ -34,7 +34,7 @@ def parse_GGA(values: list[str]) -> GNSSRecord | None:
             altitude=float(values[9])
         )
     except ValueError:
-        logger.error(f'Error parsing GGA: {values}')
+        logger.debug(f'Error parsing GGA: {values}') # This happens when GPS signal is absent
 
 def parse_RMC(values: list[str]) -> GNSSRecord | None:
     logger = logging.getLogger('greybike')
@@ -45,7 +45,7 @@ def parse_RMC(values: list[str]) -> GNSSRecord | None:
             speed=float(values[7]) * KNOTS_TO_KMH
         )
     except ValueError:
-        logger.error(f'Error parsing RMC: {values}')
+        logger.debug(f'Error parsing RMC: {values}') # This happens when GPS signal is absent
 
 def parse_GLL(values: list[str]) -> GNSSRecord | None:
     logger = logging.getLogger('greybike')
@@ -55,7 +55,7 @@ def parse_GLL(values: list[str]) -> GNSSRecord | None:
             longitude=float(values[3]),
         )
     except ValueError:
-        logger.error(f'Error parsing GGA: {values}')
+        logger.debug(f'Error parsing GGA: {values}') # This happens when GPS signal is absent
 
 def process_nmea_line(line: bytes) -> GNSSRecord | None:
     logger = logging.getLogger('greybike')

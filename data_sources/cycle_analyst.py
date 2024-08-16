@@ -47,7 +47,7 @@ def ca_record_from_hardware_serial(ser: serial.Serial) -> CATelemetryRecord | No
     try:
         line = line.decode("utf-8")
     except Exception as e:
-        logger.error(f'Error decoding serial line: {e}')
+        logger.debug(f'Error decoding serial line: {e}') # Sometimes serial return corrupted data
         return None
     return parse_telemetry_line(line)
 
@@ -87,7 +87,7 @@ def ca_record_from_random(previous: CATelemetryRecord | None) -> CATelemetryReco
 def get_ca_hardware_serial() -> serial.Serial | None:
     logger = logging.getLogger('greybike')
     if CA_HARDWARE_SERIAL is None:
-        logger.error('CA_HARDWARE_SERIAL is not set using software serial')
+        logger.info('CA_HARDWARE_SERIAL is not set using software serial')
         return None
     try:
         ser = serial.Serial(CA_HARDWARE_SERIAL, CA_SERIAL_BAUD_RATE, timeout=SERIAL_TIMEOUT)

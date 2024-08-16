@@ -1,3 +1,6 @@
+body {
+    margin: 0;
+}
 #telemetry-params {
     display: flex;
     flex-wrap: wrap;

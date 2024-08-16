@@ -3,21 +3,23 @@ import { useContext, useState } from 'react';
 import { LineChart } from '@mui/x-charts/LineChart';
 import { WebSocketContext } from './WebSocketContext';
 import { PARAM_OPTIONS, DashMode, DashModeConfigs, ChartTypeMapping, ChartType, ChartSettings } from './types';
-import { Button, Stack } from '@mui/material';
+import { Button, Stack, Unstable_Grid2 as Grid, Box } from '@mui/material';
 import { enumKeys } from './utils';
 import { useWakeLock } from './use-wake-lock';
 
 
 function ParamContainer({ name, value, unit }: { name: string, value: number, unit: string }) {
     return (
-        <div className="param-container">
-            <div>
-                <span className="param-value">{value.toFixed(2)}</span>
-                &nbsp;
-                <span className="param-unit">{unit}</span>
-            </div>
-            <div className="param-name">{name}</div>
-        </div>
+        <Grid xs={6} className="param-container">
+            <Stack direction='column' alignItems='center'>
+                <div>
+                    <span className="param-value">{value.toFixed(2)}</span>
+                    &nbsp;
+                    <span className="param-unit">{unit}</span>
+                </div>
+                <div className="param-name">{name}</div>
+            </Stack>
+        </Grid>
     )
 }
 
@@ -55,12 +57,14 @@ function Chart({ chartType }: { chartType: ChartType }) {
         chartData = getDataSeries(bikeData?.telemetry || [], chartSettings);
     }
     return (
-        <Stack sx={{ width: '100%', maxWidth: 1000 }}>
-            <LineChart
-                { ...chartData }
-                height={300}
-            />
-        </Stack>
+        <Box sx={{ width: '100%', overflowX: 'hidden'}}>
+            <Stack sx={{ width: 'calc(100% + 40px);', maxWidth: 1000 }}>
+                <LineChart
+                    { ...chartData }
+                    height={300}
+                />
+            </Stack>
+        </Box>
     )
 }
 
@@ -81,9 +85,9 @@ function DashParams({ mode }: { mode: DashMode }){
         }
     }
     return (
-        <Stack direction='row' spacing={2} justifyContent='space-around' width='100%'>
+        <Grid container direction='row' minHeight='200px' spacing={2} justifyContent='space-around' alignItems='center' width='100%'>
             { paramElems }
-        </Stack>
+        </Grid>
     )
 }
 
@@ -106,7 +110,7 @@ export default function Dash() {
     }
     return (
         <>
-            <Stack spacing={2} direction='column' alignItems='center' justifyContent='center'>
+            <Stack mt={2} spacing={2} direction='column' alignItems='center' justifyContent='center'>
                 <DashParams mode={mode} />
                 <Stack direction='row' spacing={2}>
                     <Button variant='contained' onClick={() => setMode(DashMode.POWER)}>Power</Button>

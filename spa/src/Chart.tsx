@@ -14,6 +14,10 @@ function getDataSeries(data: WebSocketData, chartSettings: ChartSettings[]): { x
             lineData = data.systemRecords;
         } else if (chartConf.type === TelemetryType.CA) {
             lineData = data.caRecords;
+        } else if (chartConf.type === TelemetryType.ELECTRIC) {
+            lineData = data.electricRecords;
+        } else if (chartConf.type === TelemetryType.GNSS) {
+            lineData = data.gnssRecords;
         }
         if (lineData.length > maxLen) {
             maxLen = lineData.length;

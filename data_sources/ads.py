@@ -62,7 +62,8 @@ def electric_record_from_ads(ads: ADS.ADS1115) -> ElectricalRecord:
 def electric_record_from_random(previous: ElectricalRecord | None) -> ElectricalRecord:
     return ElectricalRecord(
         current=get_random_value(0, 5, 0.05, previous and previous.current),
-        voltage=get_random_value(38, 55, 0.1, previous and previous.voltage)
+        voltage=get_random_value(38, 55, 0.5, previous and previous.voltage),
+        temp=get_random_value(20, 50, 1, previous and previous.temp)
     )
 
 def get_i2c_interface() -> busio.I2C | None:

@@ -70,7 +70,7 @@ def ca_record_from_random(previous: CATelemetryRecord | None) -> CATelemetryReco
         current=get_random_value(-20, 25, 5, previous and previous.current),
         speed=get_random_value(0, 50, 1, previous and previous.speed),
         trip_distance=get_random_value(0, 100, 0.1, previous and previous.trip_distance),
-        motor_temp=get_random_value(20, 80, 0.1, previous and previous.motor_temp),
+        motor_temp=get_random_value(20, 80, 0.5, previous and previous.motor_temp),
         pedal_rpm=get_random_value(0, 200, 10, previous and previous.pedal_rpm),
         human_watts=get_random_value(0, 500, 20, previous and previous.human_watts),
         human_torque=get_random_value(0, 50, 0.1, previous and previous.human_torque),

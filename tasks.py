@@ -3,9 +3,9 @@ from data_types import TaskData, AppState
 import asyncio
 import logging
 
-logger = logging.getLogger('greybike')
 
 def _handle_task_result(task: asyncio.Task[Any]) -> None:
+    logger = logging.getLogger('greybike')
     # This is used to log exceptions in tasks immediately when they are raised.
     # https://quantlane.com/blog/ensure-asyncio-task-exceptions-get-logged/
     try:
@@ -33,6 +33,7 @@ def create_periodic_task(
     name: str,
     interval: float,
 ) -> None:
+    logger = logging.getLogger('greybike')
     async def closure():
         while True:
             await async_function(app_state)

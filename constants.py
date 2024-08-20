@@ -46,6 +46,8 @@ WS_TIMEOUT = 0.1 # in seconds
 PING_TIMEOUT = 1 # In seconds
 ROUTER_HOSTNAME = os.environ.get('ROUTER_HOSTNAME', 'router.grey')
 
+LOGGING_TEMPLATE = '%(asctime)s %(message)s'
+
 class ColoredFormatter(logging.Formatter):
 
     grey = "\x1b[38;20m"
@@ -54,7 +56,7 @@ class ColoredFormatter(logging.Formatter):
     red = "\x1b[31;20m"
     bold_red = "\x1b[31;1m"
     reset = "\x1b[0m"
-    format_template = "%(asctime)s %(message)s"
+    format_template = LOGGING_TEMPLATE
 
     FORMATS: dict[int, str] = {
         logging.DEBUG: grey + format_template + reset,
@@ -72,14 +74,18 @@ class ColoredFormatter(logging.Formatter):
 LOGGING_CONFIG: dict[str, Any] = {
     'version': 1,
     'formatters': {
-        'timestamp': {
+        'colored_timestamp': {
             '()': ColoredFormatter,
+        },
+        'timestamp': {
+            'format': LOGGING_TEMPLATE,
         }
+
     },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
-            'formatter': 'timestamp',
+            'formatter': 'colored_timestamp',
         },
         'file': {
             'class': 'logging.FileHandler',

@@ -5,17 +5,24 @@ import asyncio
 import os
 import random
 import json
+import logging
 from data_types import BaseRecord, AppState, MessageType
 
 
 async def send_ws_message(state: AppState, message_type: MessageType, data: dict[str, Any]):
+    logger = logging.getLogger('greybike')
     message = {
         'type': message_type,
         'data': data
     }
     message_str = json.dumps(message)
     for ws in state.websockets:
-        await ws.send_str(message_str)
+        try:
+            await ws.send_str(message_str)
+        except ConnectionResetError as e:
+            logger.error(f'Error sending websocket message: {e}')
+
+
 
 RANDOM_CHANGE_FREQUENCY = 5
 

@@ -10,6 +10,7 @@ from enum import IntEnum
 from datetime import datetime
 from typing import Type
 from types import TracebackType
+import logging
 
 
 
@@ -174,8 +175,8 @@ class GpsdClient:
         return line
 
     async def get_result(self) -> TPV | Sky | None:
+        logger = logging.getLogger('greybike')
         data = await self.get_line_data()
-        print(data)
         result_class = data.pop("class")
         result = None
         try:
@@ -186,7 +187,7 @@ class GpsdClient:
                 data['satellites'] = prns
                 result = Sky(**data)
         except TypeError as e:
-            print(e)
+            logger.debug(e)
         return result
 
     async def poll(self):

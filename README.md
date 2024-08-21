@@ -13,12 +13,6 @@ Raspberry Zero 2W has only one hardware uart. It is used for GNSS data due to hi
 Cycle Analyst telemetry is read through software uart using pigpio
 
 
-
-Run
-```bash
-./run.sh
-```
-
 Install service
 ```bash
 ./install_service.sh
@@ -33,4 +27,27 @@ sudo cp bike.sh /usr/local/bin/bike
 Than run
 ```bash
 bike test_ads
+```
+
+### GNSS Setup on GL-X3000 Router
+I use use this router for onboard network and internet. It also supports GNSS, which is enabled this way
+
+Instruction from https://forum.gl-inet.com/t/howto-gl-x3000-gps-configuration-guide/30260
+Internet -> Modem managemenet -> AT Command
+```
+AT+QGPSCFG="autogps",1
+AT+QGPS=1
+```
+This should turn on GPS autostart whenever the router reboots, as well as start GPS acquisition right away.
+
+#### Step 2: install and configure gpsd
+Install gpsd via the Plugins page “Applications”
+
+```bash
+uci set gpsd.core.device='/dev/mhi_LOOPBACK'
+uci set gpsd.core.listen_globally='1'
+uci set gpsd.core.enabled='1'
+
+/etc/init.d/gpsd enable
+/etc/init.d/gpsd start
 ```

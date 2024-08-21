@@ -11,7 +11,7 @@ type WebSocketProviderProps = {
 }
 
 const LOGS_DURATION = 200;
-const CHART_INTERVAL = 1; // In seconds
+const CHART_INTERVAL = 2; // In seconds
 
 
 function rotateElems<T extends Timestamped>(elems: T[], newElem: T): T[] {

@@ -8,6 +8,8 @@ import json
 from dataclasses import dataclass, asdict
 from enum import IntEnum
 from datetime import datetime
+from typing import Type
+from types import TracebackType
 
 
 
@@ -23,6 +25,10 @@ class Watch:
     split24: bool = False
     raw: int = 0
     json: bool = True
+    nmea: bool = False
+    scaled: bool = False
+    timing: bool = False
+    pps: bool = False
 
 
 @dataclass
@@ -41,7 +47,6 @@ class Version:
 class Device:
     path: str
     driver: str
-    subtype: str
     activated: datetime
     flags: int
     native: int
@@ -49,11 +54,8 @@ class Device:
     parity: str
     stopbits: int
     cycle: float
-    mincycle: float
-
-
-class Devices:
-    devices: list[Device]
+    subtype: str | None = None
+    mincycle: float | None = None
 
 
 @dataclass
@@ -96,15 +98,16 @@ class PRN:
 @dataclass
 class Sky:
     device: str
-    xdop: float
-    ydop: float
-    vdop: float
-    tdop: float
-    hdop: float
-    gdop: float
     nSat: int
     uSat: int
     satellites: list[PRN]
+    xdop: float | None = None
+    ydop: float | None = None
+    vdop: float | None = None
+    tdop: float | None = None
+    hdop: float | None = None
+    gdop: float | None = None
+    pdop: float | None = None
 
 
 @dataclass
@@ -128,7 +131,7 @@ class GpsdClient:
     reader: asyncio.StreamReader
     writer: asyncio.StreamWriter
     version: Version
-    devices: Devices
+    devices: list[Device]
     watch: Watch
     sky: Sky
 
@@ -138,6 +141,20 @@ class GpsdClient:
 
         self.watch_config = watch_config
 
+    async def read_connect_lines(self):
+        line_data = await self.get_line_data()
+        del line_data['class']
+        self.version = Version(**line_data)
+        line_data = await self.get_line_data()
+        self.devices = []
+        for device in line_data['devices']:
+            del device['class']
+            self.devices.append(Device(**device))
+        line_data = await self.get_line_data()
+        del line_data['class']
+        self.watch = Watch(**line_data)
+
+
     async def connect(self):
         self.reader, self.writer = await asyncio.open_connection(self.host, self.port)
 
@@ -145,30 +162,31 @@ class GpsdClient:
             WATCH.format(json.dumps(asdict(self.watch_config))).encode()
         )
         await self.writer.drain()
-
-        self.version = await self.get_result()
-        self.devices = await self.get_result()
-        self.watch = await self.get_result()
+        await self.read_connect_lines()
 
     async def close(self):
         self.writer.close()
         await self.writer.wait_closed()
 
-    async def get_result(self):
-        data = await self.reader.readline()
-        data = json.loads(data.decode("utf-8").replace("\r\n", ""))
+    async def get_line_data(self):
+        line = await self.reader.readline()
+        line = json.loads(line.decode("utf-8").replace("\r\n", ""))
+        return line
+
+    async def get_result(self) -> TPV | Sky | None:
+        data = await self.get_line_data()
         print(data)
-        result_class = data.get("class")
-        del data["class"]
+        result_class = data.pop("class")
         result = None
         try:
             if result_class == "TPV":
                 result = TPV(**data)
             elif result_class == "SKY":
+                prns = [PRN(**prn) for prn in data.pop('satellites')]
+                data['satellites'] = prns
                 result = Sky(**data)
         except TypeError as e:
             print(e)
-        print(result)
         return result
 
     async def poll(self):
@@ -180,13 +198,13 @@ class GpsdClient:
         await self.connect()
         return self
 
-    async def __aexit__(self, exc_type, exc, tb):
+    async def __aexit__(self, exc_type: Type[BaseException], exc: BaseException, tb: TracebackType):
         await self.close()
 
     def __aiter__(self):
         return self
 
-    async def __anext__(self): 
+    async def __anext__(self) -> TPV | Sky | None: 
         result = await self.get_result()
         if isinstance(result, TPV):
             return result

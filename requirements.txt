@@ -4,3 +4,4 @@ gpiozero==2.0.1
 pigpio==1.78
 psutil==6.0.0
 adafruit-circuitpython-ads1x15==2.2.26
+adafruit-circuitpython-register==1.9.18

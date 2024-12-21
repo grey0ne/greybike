@@ -18,6 +18,7 @@ Install service
 ./install_service.sh
 sudo systemctl enable pigpiod
 ```
+Enable I2C and UART through raspi-config
 
 Script for running commands
 ```bash

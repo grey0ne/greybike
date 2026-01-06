@@ -1,5 +1,5 @@
 pyserial==3.5
-aiohttp==3.12.14
+aiohttp==3.13.3
 gpiozero==2.0.1
 pigpio==1.78
 psutil==6.0.0
